@@ -1,0 +1,46 @@
+{
+  "atractivos": [
+    {
+      "id": 1,
+      "nombre": "Los Ilinizas",
+      "descripcion": "Las faldas occidentales del Ilinizas pertenecen al cantón Sigchos, especialmente accesibles desde las parroquias Pastocalle y Toacaso, así como de poblaciones vecinas próximas a El Chaupi y Lasso.",
+      "imagen": "/Los_Ilinizas.jpg",
+      "altitud": {
+        "norte": "5.126 m",
+        "sur": "5.263 m",
+        "tormales": "4.000 m"
+      },
+      "temperatura": "9.0 °C (Media)"
+    },
+    {
+      "id": 2,
+      "nombre": "Malqui y Machay",
+      "descripcion": "Este sitio arqueológico está ubicado en la parroquia Chugchilán, en el sector denominado Malqui-Machay, dentro del cantón Sigchos.",
+      "imagen": "/Maqui-Machay.webp",
+      "altitud": {
+        "general": "Se encuentra aproximadamente a 1620 metros sobre el nivel del mar, en un entorno de selva subtropical andina."
+      },
+      "temperatura": "13.0 °C (Media)"
+    },
+    {
+      "id": 3,
+      "nombre": "Bosque Protector Sarapullo",
+      "descripcion": "Está situado en la parroquia Palo Quemado, en el recinto Sarapullo, dentro del cantón Sigchos, provincia de Cotopaxi.",
+      "imagen": "/Bosque_Protector_Sarapullo.jpg",
+      "altitud": {
+        "general": "2.000 - 3.000 metros sobre el nivel del mar"
+      },
+      "temperatura": "15.0 °C (Media)"
+    },
+    {
+      "id": 4,
+      "nombre": "Licamancha",
+      "descripcion": "Se localiza en la parroquia urbana de Sigchos, en el sector Guacusig-Licamancha, a unos 7 km de la cabecera cantonal, siendo un destino de fácil acceso y gran potencial.",
+      "imagen": "/licamancha.jpeg",
+      "altitud": {
+        "general": "2.800 metros sobre el nivel del mar"
+      },
+      "temperatura": "12.0 °C (Media)"
+    }
+  ]
+}
