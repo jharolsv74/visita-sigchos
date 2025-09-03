@@ -36,3 +36,13 @@ export type RutaGeoJSON = {
     properties?: Record<string, unknown>;
   }>;
 };
+
+export type Autoridad = {
+  Id: number;
+  Nombre: string;
+  Cargo?: string | null;
+  Email?: string | null;
+  Telefono?: string | null;
+  ImagenUrl?: string | null;
+  [key: string]: unknown;
+};
