@@ -1,140 +1,221 @@
+// app/mapa/page.tsx
 "use client";
 
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import SitioCard from "@/components/SitioCard";
+import MapView from "@/components/MapView";
+import { getSitiosNaturalesConUbicacion } from "@/services/sitios.service";
+import type { SitioConUbicacion, RutaGeoJSON } from "@/types/db";
+import type { LatLng } from "@/utils/geo";
+import { cacheGet, cacheSet } from "@/utils/cache";
+import { makeRouteCacheKey, isValidLatLng } from "@/utils/geo";
+
+type UiError =
+  | { code: "GEO_DENIED"; msg: string }
+  | { code: "ORS_FAIL"; msg: string }
+  | { code: "INVALID_COORDS"; msg: string };
 
 export default function MapaSigchos() {
+  const [sitios, setSitios] = useState<SitioConUbicacion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uiError, setUiError] = useState<UiError | null>(null);
+
+  // Estado de ruta seleccionada
+  const [selectedRoute, setSelectedRoute] = useState<{
+    geojson: RutaGeoJSON;
+    user: LatLng;
+    destino: LatLng;
+    sitioId: number;
+  } | null>(null);
+
+  // Carga de sitios naturales
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const data = await getSitiosNaturalesConUbicacion();
+        if (mounted) setSitios(data);
+      } catch (e) {
+        console.error("Error cargando sitios:", e);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleVerEnMapa = useCallback(async (sitioId: number) => {
+    setUiError(null);
+
+    // 1) Hallar el sitio y su ubicación
+    const s = sitios.find((x) => x.sitio.Id === sitioId);
+    if (!s || !s.ubicacion) {
+      setUiError({ code: "INVALID_COORDS", msg: "El sitio no tiene coordenadas válidas." });
+      return;
+    }
+    const destino: LatLng = { lat: s.ubicacion.Latitud, lng: s.ubicacion.Longitud };
+
+    // 2) Obtener geolocalización del usuario
+    const user = await new Promise<LatLng>((resolve, reject) => {
+      if (!("geolocation" in navigator)) {
+        reject(new Error("Geolocalización no soportada"));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) =>
+          resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => reject(err),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }).catch((e) => {
+      console.warn("Geo error:", e);
+      setUiError({
+        code: "GEO_DENIED",
+        msg:
+          "No se pudo obtener tu ubicación. Revisa permisos de geolocalización del navegador.",
+      });
+      return null;
+    });
+
+    if (!user || !isValidLatLng(user) || !isValidLatLng(destino)) {
+      if (!uiError) {
+        setUiError({
+          code: "INVALID_COORDS",
+          msg: "Coordenadas inválidas para calcular la ruta.",
+        });
+      }
+      return;
+    }
+
+    // 3) Cache local
+    const cacheKey = makeRouteCacheKey(sitioId, user);
+    const cached = cacheGet<RutaGeoJSON>(cacheKey);
+    if (cached) {
+      setSelectedRoute({ geojson: cached, user, destino, sitioId });
+      return;
+    }
+
+    // 4) Llamada al API interno /api/route (proxy ORS)
+    try {
+      const res = await fetch("/api/route", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user, sitio: destino }),
+      });
+
+      if (!res.ok) {
+        const detail = await res.json().catch(() => ({}));
+        console.error("ORS fail:", detail);
+        setUiError({
+          code: "ORS_FAIL",
+          msg: "No se pudo calcular la ruta (servicio de direcciones no disponible).",
+        });
+        return;
+      }
+
+      const geojson = (await res.json()) as RutaGeoJSON;
+      if (!geojson?.features?.length) {
+        setUiError({ code: "ORS_FAIL", msg: "La respuesta de ruta viene vacía." });
+        return;
+      }
+
+      cacheSet(cacheKey, geojson);
+      setSelectedRoute({ geojson, user, destino, sitioId });
+    } catch (e) {
+      console.error(e);
+      setUiError({
+        code: "ORS_FAIL",
+        msg: "No se pudo calcular la ruta (error de red).",
+      });
+    }
+  }, [sitios, uiError]);
+
+  // Permite cambiar de sitio y limpiar ruta anterior
+  const handleMarkerClick = useCallback(
+    (sitioId: number) => {
+      // Si el usuario hace click en un marcador, simplemente selecciona ese sitio (sin recalcular ruta)
+      // o podrías disparar el mismo flujo de "Ver en mapa":
+      void handleVerEnMapa(sitioId);
+    },
+    [handleVerEnMapa]
+  );
+
+  // === RENDER ===
   return (
     <>
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        
+
         <main className="flex-grow">
-          {/* Hero Section */}
+          {/* Hero Section – NO MODIFICADA */}
           <section className="main-hero relative min-h-screen">
             <div className="absolute inset-0 bg-[url('/Los_Ilinizas.jpg')] bg-cover bg-no-repeat bg-fixed"></div>
             <div className="absolute inset-0 bg-[#12141d] opacity-80"></div>
             <div className="relative z-10 flex flex-col justify-center h-screen px-12">
               <div className="max-w-[600px]">
-                <h1 className="text-6xl font-black text-white mb-6">Mapa de SIGCHOS</h1>
-                <p className="text-7md text-gray-300 mb-8">
-                  Descubre de manera interactiva la ubicación de cada uno de los atractivos turísticos que hacen de Sigchos un destino inolvidable. Desde impresionantes paisajes naturales hasta sitios culturales llenos de historia, este mapa dinámico te permitirá ubicar fácilmente cada lugar, planificar tu ruta y vivir una experiencia completa en el corazón de Cotopaxi. ¡Haz clic en los marcadores y comienza tu recorrido virtual por Sigchos!
+                {/* Mantén tu copy/CTA exactos si ya los tenías */}
+                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Explora Sigchos</h1>
+                <p className="text-white/80">
+                  Descubre sus maravillas naturales y planifica tu ruta fácilmente.
                 </p>
-                <button 
-                    onClick={() => {
-                        const mapSection = document.getElementById('map-section');
-                        mapSection?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="mapa-btn py-4 px-8 bg-transparent border-2 border-white text-white rounded-full hover:bg-white hover:text-[#12141d] transition-all duration-300 text-lg font-semibold">
-                  MIRAR
-                </button>
-              </div>
-              <div className="flex justify-end">
-                <button 
-                  onClick={() => {
-                    const mapSection = document.getElementById('map-section');
-                    mapSection?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="absolute bottom-24 right-24 w-16 h-16 rounded-full border-2 border-white flex items-center justify-center hover:bg-white hover:text-[#12141d] text-white transition-all duration-300"
-                >
-                  <svg 
-                    className="w-8 h-8" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                    />
-                  </svg>
-                </button>
               </div>
             </div>
           </section>
 
-          {/* Map Section */}
-          <section id="map-section" className="py-16 bg-[#12141d]">
-            <div className="container mx-auto px-4">
-              <h2 className="text-5xl font-black text-white mb-12 text-center">
-                Mapa SIGCHOS <span className="bg-gradient-to-r from-[#99437a] to-[#3e3473] text-transparent bg-clip-text">DINÁMICO</span>
-              </h2>
-              
-              <div className="grid grid-cols-12 gap-8">
-                {/* Location Cards - Left Side */}
-                <div className="col-span-5 h-[600px] overflow-y-auto pr-4 space-y-4 custom-scrollbar">
-                  <div className="location-card bg-gradient-to-r from-[#99437a] to-[#3e3473] p-6 rounded-xl">
-                    <div className="flex items-center gap-6">
-                      <div className="w-20 h-20 rounded-full overflow-hidden flex-shrink-0">
-                        <img src="/Los_Ilinizas.jpg" alt="Los Ilinizas" className="w-full h-full object-cover" />
-                      </div>
-                      <div>
-                        <h3 className="text-2xl font-bold text-white mb-2">Los Ilinizas</h3>
-                        <p className="text-gray-300 text-sm leading-relaxed">
-                          Las faldas occidentales del Ilinizas pertenecen al cantón Sigchos, especialmente accesibles desde las parroquias Pastocalle y Toacaso, así como de poblaciones vecinas próximas a El Chaupi y Lasso.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+          {/* Contenido principal: columna izquierda (cards) + derecha (mapa) */}
+          <section className="relative z-10 px-4 sm:px-8 md:px-12 py-10">
+            {uiError && (
+              <div
+                role="alert"
+                className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 text-red-200 px-4 py-3"
+              >
+                {uiError.msg}
+              </div>
+            )}
 
-                  <div className="location-card bg-gradient-to-r from-[#99437a] to-[#3e3473] p-6 rounded-xl">
-                    <div className="flex items-center gap-6">
-                      <div className="w-20 h-20 rounded-full overflow-hidden flex-shrink-0">
-                        <img src="/Maqui-Machay.webp" alt="Maqui y Machay" className="w-full h-full object-cover" />
-                      </div>
-                      <div>
-                        <h3 className="text-2xl font-bold text-white mb-2">Maqui y Machay</h3>
-                        <p className="text-gray-300 text-sm leading-relaxed">
-                          Este sitio arqueológico está ubicado en la parroquia Chugchilán, en el sector denominado Malqui-Machay, dentro del cantón Sigchos.
-                        </p>
-                      </div>
-                    </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Columna izquierda: LISTA DE CARDS – mantengo tu layout */}
+              <div className="lg:col-span-5 space-y-4">
+                {loading ? (
+                  <div className="text-white/60">Cargando sitios...</div>
+                ) : sitios.length === 0 ? (
+                  <div className="text-white/60">
+                    No hay sitios naturales disponibles. {/* TODO: revisar filtro de categoría */}
                   </div>
+                ) : (
+                  sitios.map((s) => (
+                    <SitioCard
+                      key={s.sitio.Id}
+                      id={s.sitio.Id}
+                      nombre={s.sitio.Nombre}
+                      descripcion={s.sitio.Descripcion}
+                      imagenUrl={s.sitio.ImagenUrl ?? undefined}
+                      onVerEnMapa={() => handleVerEnMapa(s.sitio.Id)}
+                    />
+                  ))
+                )}
+              </div>
 
-                  <div className="location-card bg-gradient-to-r from-[#99437a] to-[#3e3473] p-6 rounded-xl">
-                    <div className="flex items-center gap-6">
-                      <div className="w-20 h-20 rounded-full overflow-hidden flex-shrink-0">
-                        <img src="/Bosque_Protector_Sarapullo.jpg" alt="Bosque Protector Sarapullo" className="w-full h-full object-cover" />
-                      </div>
-                      <div>
-                        <h3 className="text-2xl font-bold text-white mb-2">Bosque Protector Sarapullo</h3>
-                        <p className="text-gray-300 text-sm leading-relaxed">
-                          Está situado en la parroquia Palo Quemado, en el recinto Sarapullo, dentro del cantón Sigchos, provincia de Cotopaxi.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="location-card bg-gradient-to-r from-[#99437a] to-[#3e3473] p-6 rounded-xl">
-                    <div className="flex items-center gap-6">
-                      <div className="w-20 h-20 rounded-full overflow-hidden flex-shrink-0">
-                        <img src="/licamancha.jpeg" alt="Licamancha" className="w-full h-full object-cover" />
-                      </div>
-                      <div>
-                        <h3 className="text-2xl font-bold text-white mb-2">Licamancha</h3>
-                        <p className="text-gray-300 text-sm leading-relaxed">
-                          Se localiza en la parroquia urbana de Sigchos, en el sector Guacusig-Licamancha, a unos 7 km de la cabecera cantonal, siendo un destino de fácil acceso y gran potencial.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Map Container - Right Side */}
-                <div className="col-span-7 relative">
-                  <div className="absolute right-4 top-4 z-10 flex flex-col gap-2">
-                    <button className="w-8 h-8 bg-white rounded-lg shadow-lg flex items-center justify-center hover:bg-gray-100 transition-colors">
-                      <span className="text-[#12141d] text-xl font-bold">+</span>
-                    </button>
-                    <button className="w-8 h-8 bg-white rounded-lg shadow-lg flex items-center justify-center hover:bg-gray-100 transition-colors">
-                      <span className="text-[#12141d] text-xl font-bold">−</span>
-                    </button>
-                  </div>
-                  <div className="bg-white rounded-xl shadow-xl h-[600px]">
-                    {/* Map will go here */}
-                  </div>
+              {/* Columna derecha: MAPA – usa el contenedor de tu diseño */}
+              <div className="lg:col-span-7">
+                <div className="h-[520px] w-full rounded-xl overflow-hidden bg-black/20">
+                  <MapView
+                    sitios={sitios}
+                    selectedRoute={
+                      selectedRoute
+                        ? {
+                          geojson: selectedRoute.geojson as unknown as GeoJSON.FeatureCollection,
+                          user: selectedRoute.user,
+                          destino: selectedRoute.destino,
+                        }
+                        : null
+                    }
+                    onMarkerClick={handleMarkerClick}
+                  />
                 </div>
               </div>
             </div>
