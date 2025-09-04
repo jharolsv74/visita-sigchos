@@ -157,7 +157,7 @@ export default function ParroquiaTemplate({ parroquia }: Props) {
                 Descubre cada rincón de esta parroquia a través de imágenes que muestran su cultura, paisajes y tradiciones. ¡Visita la galería completa!
               </p>
               <div className="card-actions">
-                <a href="/contactos" className="btn primary" style={{ background: 'rgba(7,16,26,0.95)', color: '#fff' }}>Contactar</a>
+                <a href="/transporte" className="btn primary" style={{ background: 'rgba(7,16,26,0.95)', color: '#fff' }}>Transporte</a>
                 <a href="/detalleGaleria" className="btn ghost" style={{ borderColor: 'rgba(7,16,26,0.12)', color: 'rgba(7,16,26,0.95)' }}>Ver galería</a>
               </div>
             </div>
@@ -221,6 +221,7 @@ export default function ParroquiaTemplate({ parroquia }: Props) {
                 &#10095;
             </button>
           </div>
+          
         </section>
 
       </main>

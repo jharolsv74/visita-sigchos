@@ -84,3 +84,34 @@ export type DetalleGaleria = {
   ImagenUrl: string | null;
   [key: string]: unknown;
 };
+
+export type Emprendimiento = {
+  Id: number;
+  IdCategoria: number | null;
+  IdUbicacion?: number | null;
+  IdParroquia?: number | null;
+  Nombre: string;
+  Horario?: string | null;
+  Descripcion?: string | null;
+  Valor?: number | null; 
+  IdGaleria?: number | null;
+  [key: string]: unknown;
+};
+
+export type Catalogo = {
+  Id: number;
+  codigo: string;
+  Descripcion?: string | null;
+  [key: string]: unknown;
+}
+
+export type Transporte = {
+  Id: number;
+  IdParroquia?: number | null;
+  Nombre: string;
+  Descripcion?: string | null;
+  Ruta?: string | null;
+  Horario?: string | null;
+  ImagenUrl?: string | null;
+  [key: string]: unknown;
+}

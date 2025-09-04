@@ -46,6 +46,7 @@ export default function Navbar() {
         <li><a href="/">INICIO</a></li>
         <li><a href="/atractivos">ATRACTIVOS</a></li>
         <li><a href="/mapa-sigchos">MAPA</a></li>
+        <li><a href="/emprendimientos">EMPRENDIMIENTOS</a></li>
         <li><a href="/autoridades">AUTORIDADES</a></li>
         <li><a href="/contactos">CONTACTOS</a></li>
       </ul>

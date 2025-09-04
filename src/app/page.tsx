@@ -395,7 +395,7 @@ Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca
               <p className="zapallin-message">
                 Me llamo Zapallín, porque nací entre zapallos, tradiciones campesinas y leyendas antiguas. No soy solo una verdura con personalidad: soy el guardián de los festejos, de las danzas, los sabores y los paisajes de <span className="zapallin-highlight">SIGCHOS</span> en el corazón de Cotopaxi. Aquí, cada comunidad tiene su propia forma de celebrar la vida. ¿Te atreves a conocer las fiestas que me dieron vida? acompañame por un recorrido lleno de festividad, color y magia serrana. ¡Vamos que empieza la fiesta!
               </p>
-                <button className="zapallin-btn" style={{ display: 'block', margin: '16px auto 0' }}>VER TODAS LAS FESTIVIDADES</button>
+                <button className="zapallin-btn" onClick={() => window.location.href = '/festividades'} style={{ display: 'block', margin: '16px auto 0' }}>VER TODAS LAS FESTIVIDADES</button>
             </div>
             <div className="zapallin-character">
               <img src="/Zapallin_curioso.png" alt="Zapallin" className="zapallin-img" />

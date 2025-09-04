@@ -23,7 +23,9 @@ export async function getCategoriaNaturalId(): Promise<number | null> {
     console.error("Error obteniendo categoría 'Natural':", error);
     return null;
   }
-  return data?.Id ?? null;
+  const id = data?.Id ?? null;
+  console.log('[sitios.service] getCategoriaNaturalId ->', id);
+  return id;
 }
 
 export async function getSitiosNaturalesConUbicacion(): Promise<
@@ -41,12 +43,39 @@ export async function getSitiosNaturalesConUbicacion(): Promise<
       )
       .order("Id", { ascending: true });
 
-    const { data, error } = naturalId
-      ? await query.eq("IdCategoria", naturalId)
-      : await query; // TODO: ajustar si tu categoría difiere
+    // Debug: log the query being executed
+    try {
+      console.log('[sitios.service] executing query on SitioTuristico, filter by IdCategoria=', naturalId ?? 'none');
+      let result = naturalId
+        ? await query.eq("IdCategoria", naturalId)
+        : await query; // TODO: ajustar si tu categoría difiere
 
-    if (error) throw error;
-    sitios = data ?? [];
+      console.log('[sitios.service] supabase response (initial):', {
+        error: result.error ? { message: result.error.message, details: result.error.details } : null,
+        count: result.count ?? null,
+        dataLength: Array.isArray(result.data) ? result.data.length : null,
+      });
+
+      if (result.error) throw result.error;
+
+      // Fallback: si filtramos por categoría y no hay filas, traer todos los sitios
+      if (naturalId && Array.isArray(result.data) && result.data.length === 0) {
+        console.warn('[sitios.service] category filter returned 0 rows for IdCategoria=', naturalId, '- performing fallback to fetch all sitios');
+        const allRes = await query;
+        console.log('[sitios.service] supabase response (fallback all):', {
+          error: allRes.error ? { message: allRes.error.message, details: allRes.error.details } : null,
+          count: allRes.count ?? null,
+          dataLength: Array.isArray(allRes.data) ? allRes.data.length : null,
+        });
+        if (allRes.error) throw allRes.error;
+        sitios = allRes.data ?? [];
+      } else {
+        sitios = result.data ?? [];
+      }
+    } catch (err) {
+      console.error('[sitios.service] error fetching sitios:', err);
+      throw err;
+    }
   }
 
   // 2) Traemos ubicaciones necesarias en un solo select

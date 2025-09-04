@@ -38,6 +38,8 @@ export default function MapaSigchos() {
     (async () => {
       try {
         const data = await getSitiosNaturalesConUbicacion();
+        // Debug: show what the service returned in the browser console
+        console.log('[mapa.page] getSitiosNaturalesConUbicacion returned', Array.isArray(data) ? data.length : typeof data, data?.[0]);
         if (mounted) setSitios(data);
       } catch (e) {
         console.error("Error cargando sitios:", e);
