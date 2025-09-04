@@ -14,8 +14,31 @@ export default function Contactos() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Aquí irá la lógica para enviar el formulario
-    console.log('Formulario enviado:', formData);
+
+    // Validar campos mínimos
+    if (!formData.nombre || !formData.email || !formData.mensaje) {
+      alert('Por favor completa tu nombre, correo y mensaje antes de enviar.');
+      return;
+    }
+
+    // Construir asunto: "Nombre Apellido - Turismo Form"
+    const subject = `${formData.nombre} ${formData.apellido ? formData.apellido : ''} - Turismo Form`.trim();
+
+    // Construir cuerpo incluyendo el correo remitente y el mensaje
+    const bodyLines = [
+      `Remitente: ${formData.email}`,
+      `Nombre: ${formData.nombre} ${formData.apellido}`,
+      '',
+      'Mensaje:',
+      formData.mensaje
+    ];
+    const body = bodyLines.join('\n');
+
+    const to = 'gadmunicipal@sigchos.gob.ec';
+    const mailto = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    // Abrir el cliente de correo del usuario con los datos cargados
+    window.location.href = mailto;
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

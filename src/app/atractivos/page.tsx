@@ -2,9 +2,28 @@
 
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import atractivosData from '@/data/atractivos.json';
+// removed unused local JSON import; this page now loads sitios from the DB
+import { useEffect, useState } from 'react';
+import { getSitiosNaturalesConUbicacion } from '@/services/sitios.service';
+import type { SitioConUbicacion } from '@/types/db';
 
 export default function AtractivosTuristicos() {
+  const [sitiosSlider, setSitiosSlider] = useState<SitioConUbicacion[] | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    getSitiosNaturalesConUbicacion()
+      .then((data) => {
+        if (!mounted) return;
+        setSitiosSlider(data ?? []);
+      })
+      .catch((err) => {
+        console.error('[atractivos.page] error loading slider sitios:', err);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
   return (
     <>
       <div className="min-h-screen flex flex-col">
@@ -61,53 +80,11 @@ export default function AtractivosTuristicos() {
 
           {/* Atractivos Section */}
           <section id="atractivos-section" className="relative py-16 overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 opacity-90"></div>  
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 opacity-90"></div>
             <div className="relative container mx-auto px-4">
-              <h2 className="text-5xl font-black text-white mb-16 text-center tracking-wide">
-                TODOS LOS SITIOS
-              </h2>
+              <h2 className="text-5xl font-black text-white mb-16 text-center tracking-wide">TODOS LOS SITIOS</h2>
 
-              <div className="space-y-6">
-                {atractivosData.atractivos.map((atractivo) => (
-                    <div className="bg-[#12141d] rounded-lg overflow-hidden max-w-[1000px] mx-auto p-4">
-                    <div className="flex flex-col md:flex-row items-center gap-6">
-                        <div className="md:w-[400px] h-[250px] flex-shrink-0 flex items-center rounded-lg overflow-hidden">
-                        <img src={atractivo.imagen} alt={atractivo.nombre} className="w-full h-full object-cover" />
-                        </div>
-                      <div className="flex-1 flex flex-col justify-between space-y-4">
-                        <div>
-                          <h3 className="text-2xl font-bold text-white mb-4">{atractivo.nombre}</h3>
-                          <p className="text-gray-300 mb-6">{atractivo.descripcion}</p>
-
-                          <div className="space-y-4">
-                            <div>
-                              <h4 className="text-xl font-semibold text-white mb-2">Altitud</h4>
-                              {atractivo.altitud.general ? (
-                                <p className="text-gray-300">{atractivo.altitud.general}</p>
-                              ) : (
-                                <>
-                                  <p className="text-gray-300">Norte {atractivo.altitud.norte}</p>
-                                  <p className="text-gray-300">Sur {atractivo.altitud.sur}</p>
-                                  <p className="text-gray-300">Tormales {atractivo.altitud.tormales}</p>
-                                </>
-                              )}
-                            </div>
-                            
-                            <div>
-                              <h4 className="text-xl font-semibold text-white mb-2">Temperatura</h4>
-                              <p className="text-gray-300">{atractivo.temperatura}</p>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <button className="mt-6 px-6 py-2 text-white border-2 border-white rounded-full hover:bg-white hover:text-[#12141d] transition-all duration-300 w-fit">
-                          CONOCER MÁS
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <SiteCards />
             </div>
             <div className="atractivos-slider">
               <div 
@@ -133,44 +110,13 @@ export default function AtractivosTuristicos() {
                   document.addEventListener('mousemove', handleMouseMove);
                   document.addEventListener('mouseup', handleMouseUp);
                 }}>
-                {[
-                  {
-                    image: '/Maqui-Machay.webp',
-                    title: 'Maqui y Machay',
-                    subtitle: 'Maqui y Machay',
-                    url: '/atractivos/maqui-y-machay'
-                  },
-                  {
-                    image: '/Bosque_Protector_Sarapullo.jpg',
-                    title: 'Bosque Protector',
-                    subtitle: 'Palo Quemado',
-                    url: '/atractivos/sarapullo'
-                  },
-                  {
-                    image: '/licamancha.jpeg',
-                    title: 'Licamancha',
-                    subtitle: 'Guacusig',
-                    url: '/atractivos/licamancha'
-                  },
-                  {
-                    image: '/Toachi.jpg',
-                    title: 'Cañón del Toachi',
-                    subtitle: 'Guacusig',
-                    url: '/atractivos/canon-del-toachi'
-                  },
-                  {
-                    image: '/Los_Ilinizas.jpg',
-                    title: 'Los Ilinizas',
-                    subtitle: 'Guacusig',
-                    url: '/atractivos/los-ilinizas'
-                  }
-                ].map((item, index) => (
-                  <a href={item.url} key={index} className="atractivo-slide">
+                {(sitiosSlider ?? []).map(({ sitio }, index) => (
+                  <a href={`/atractivos/${sitio.Id}`} key={sitio.Id ?? index} className="atractivo-slide">
                     <div className="atractivo-slide-content">
-                      <img src={item.image} alt={item.title} className="atractivo-slide-img" />
+                      <img src={sitio.ImagenUrl ?? '/file.svg'} alt={sitio.Nombre} className="atractivo-slide-img" />
                       <div className="atractivo-slide-overlay">
-                        <h3 className="atractivo-slide-title">{item.title}</h3>
-                        <p className="atractivo-slide-subtitle">{item.subtitle}</p>
+                        <h3 className="atractivo-slide-title">{sitio.Nombre}</h3>
+                        <p className="atractivo-slide-subtitle">{(sitio as any).Barrio ?? ''}</p>
                       </div>
                     </div>
                   </a>
@@ -239,5 +185,64 @@ export default function AtractivosTuristicos() {
         <Footer />
       </div>
     </>
+  );
+}
+
+function SiteCards() {
+  const [sitios, setSitios] = useState<SitioConUbicacion[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    getSitiosNaturalesConUbicacion()
+      .then((data) => {
+        if (!mounted) return;
+        setSitios(data ?? []);
+      })
+      .catch((err) => {
+        console.error('Error loading sitios:', err);
+        if (!mounted) return;
+        setError(err?.message ?? String(err));
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (loading) return <div className="text-center text-white">Cargando sitios...</div>;
+  if (error) return <div className="text-center text-red-300">Error cargando sitios: {error}</div>;
+  if (!sitios || sitios.length === 0) return <div className="text-center text-white">No se encontraron sitios.</div>;
+
+  return (
+    <div className="space-y-6">
+      {sitios.map(({ sitio, ubicacion }) => (
+        <div key={sitio.Id} className="bg-[#12141d] rounded-lg overflow-hidden max-w-[1000px] mx-auto p-4">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <div className="md:w-[400px] h-[250px] flex-shrink-0 flex items-center rounded-lg overflow-hidden">
+              <img src={sitio.ImagenUrl ?? '/file.svg'} alt={sitio.Nombre} className="w-full h-full object-cover" />
+            </div>
+            <div className="flex-1 flex flex-col justify-between space-y-4">
+              <div>
+                <h3 className="text-2xl font-bold text-white mb-4">{sitio.Nombre}</h3>
+                <p className="text-gray-300 mb-6">{sitio.Descripcion ?? ''}</p>
+                {ubicacion ? (
+                  <p className="text-gray-300">Coordenadas: {ubicacion.Latitud}, {ubicacion.Longitud}</p>
+                ) : null}
+              </div>
+
+              <a href={`/atractivos/${sitio.Id}`} className="mt-6 px-6 py-2 text-white border-2 border-white rounded-full hover:bg-white hover:text-[#12141d] transition-all duration-300 w-fit">
+                CONOCER MÁS
+              </a>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

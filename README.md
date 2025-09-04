@@ -29,7 +29,7 @@ Para iniciar la aplicación en modo desarrollo:
 npm run dev
 ```
 
-Luego abre tu navegador en [http://localhost:3000](http://localhost:3000).
+Luego abre tu navegador en [http://localhost:3000].
 
 ## Estructura del proyecto
 - `src/app/` — Páginas y rutas principales de la aplicación
@@ -45,3 +45,19 @@ Luego abre tu navegador en [http://localhost:3000](http://localhost:3000).
 ## Licencia
 
 Este proyecto es de uso educativo y promocional para la parroquia Sigchos.
+
+## Variables de entorno (desarrollo)
+
+Para desarrollo local crea un archivo `.env` en la raíz del proyecto (ya está en `.gitignore`).
+Ejemplo mínimo (no subirlo a git):
+
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://<tu-proyecto>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<tu-anon-key>
+
+# OpenRouteService (opcional, para rutas)
+ORS_API_KEY=<tu-ors-key>
+```
+
+Si necesitas que deje de fallar en entornos sin variables, modifica `src/lib/supabase.ts` para manejarlo de forma segura —pero evita commitear claves reales.
