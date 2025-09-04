@@ -13,7 +13,7 @@ const CATEGORIA_NATURAL_CODE = "NATURAL"; // TODO: confirma si tu código real e
 export async function getCategoriaNaturalId(): Promise<number | null> {
   // Busca una fila de ItemCatalogo cuyo Codigo sea 'NATURAL' o el Nombre contenga 'Natural'
   const { data, error } = await supabase
-    .from<ItemCatalogo>("ItemCatalogo")
+    .from("ItemCatalogo")
     .select("Id, Codigo, Nombre")
     .or(`Codigo.eq.${CATEGORIA_NATURAL_CODE},Nombre.ilike.%Natural%`)
     .limit(1)
@@ -23,9 +23,51 @@ export async function getCategoriaNaturalId(): Promise<number | null> {
     console.error("Error obteniendo categoría 'Natural':", error);
     return null;
   }
-  const id = data?.Id ?? null;
-  console.log('[sitios.service] getCategoriaNaturalId ->', id);
-  return id;
+  try {
+    // 1) Intentar por Codigo exacto
+    let res = await supabase
+      .from("ItemCatalogo")
+      .select("Id, Codigo, Nombre")
+      .eq("Codigo", CATEGORIA_NATURAL_CODE)
+      .limit(1)
+      .maybeSingle();
+
+    if (res.error) throw res.error;
+    if (res.data?.Id) {
+      console.log('[sitios.service] getCategoriaNaturalId (by Codigo) ->', res.data.Id);
+      return res.data.Id;
+    }
+
+    // 2) Buscar por Nombre que contenga 'Natural'
+    res = await supabase
+      .from("ItemCatalogo")
+      .select("Id, Codigo, Nombre")
+      .ilike("Nombre", "%Natural%")
+      .limit(1)
+      .maybeSingle();
+
+    if (res.error) throw res.error;
+    if (res.data?.Id) {
+      console.log('[sitios.service] getCategoriaNaturalId (by Nombre) ->', res.data.Id);
+      return res.data.Id;
+    }
+
+    // 3) Intentar por Codigo parecido (fallback)
+    res = await supabase
+      .from("ItemCatalogo")
+      .select("Id, Codigo, Nombre")
+      .ilike("Codigo", "%NAT%")
+      .limit(1)
+      .maybeSingle();
+
+    if (res.error) throw res.error;
+    const id = res.data?.Id ?? null;
+    console.log('[sitios.service] getCategoriaNaturalId (fallback) ->', id);
+    return id;
+  } catch (error) {
+    console.error("Error obteniendo categoría 'Natural':", error);
+    return null;
+  }
 }
 
 export async function getSitiosNaturalesConUbicacion(): Promise<
@@ -37,7 +79,7 @@ export async function getSitiosNaturalesConUbicacion(): Promise<
   let sitios: SitioTuristico[] = [];
   {
     const query = supabase
-      .from<SitioTuristico>("SitioTuristico")
+      .from("SitioTuristico")
       .select(
         "Id,Nombre,Descripcion,ImagenUrl,IdUbicacion,IdParroquia,IdCategoria"
       )
@@ -46,32 +88,18 @@ export async function getSitiosNaturalesConUbicacion(): Promise<
     // Debug: log the query being executed
     try {
       console.log('[sitios.service] executing query on SitioTuristico, filter by IdCategoria=', naturalId ?? 'none');
-      let result = naturalId
+      const result = naturalId
         ? await query.eq("IdCategoria", naturalId)
         : await query; // TODO: ajustar si tu categoría difiere
 
-      console.log('[sitios.service] supabase response (initial):', {
+      console.log('[sitios.service] supabase response:', {
         error: result.error ? { message: result.error.message, details: result.error.details } : null,
         count: result.count ?? null,
         dataLength: Array.isArray(result.data) ? result.data.length : null,
       });
 
       if (result.error) throw result.error;
-
-      // Fallback: si filtramos por categoría y no hay filas, traer todos los sitios
-      if (naturalId && Array.isArray(result.data) && result.data.length === 0) {
-        console.warn('[sitios.service] category filter returned 0 rows for IdCategoria=', naturalId, '- performing fallback to fetch all sitios');
-        const allRes = await query;
-        console.log('[sitios.service] supabase response (fallback all):', {
-          error: allRes.error ? { message: allRes.error.message, details: allRes.error.details } : null,
-          count: allRes.count ?? null,
-          dataLength: Array.isArray(allRes.data) ? allRes.data.length : null,
-        });
-        if (allRes.error) throw allRes.error;
-        sitios = allRes.data ?? [];
-      } else {
-        sitios = result.data ?? [];
-      }
+      sitios = result.data ?? [];
     } catch (err) {
       console.error('[sitios.service] error fetching sitios:', err);
       throw err;
@@ -86,7 +114,7 @@ export async function getSitiosNaturalesConUbicacion(): Promise<
   let ubicacionesMap = new Map<number, Ubicacion>();
   if (ubicacionIds.length) {
     const { data: ubicaciones, error: ubErr } = await supabase
-      .from<Ubicacion>("Ubicacion")
+      .from("Ubicacion")
       .select("Id,Latitud,Longitud")
       .in("Id", ubicacionIds);
 
