@@ -156,16 +156,50 @@ export default function MapaSigchos() {
             <div className="absolute inset-0 bg-[#12141d] opacity-80"></div>
             <div className="relative z-10 flex flex-col justify-center h-screen px-12">
               <div className="max-w-[600px]">
-                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Explora Sigchos</h1>
-                <p className="text-white/80">
-                  Descubre sus maravillas naturales y planifica tu ruta fácilmente.
+                <h1 className="text-6xl font-black text-white mb-6">Mapa de SIGCHOS</h1>
+                <p className="text-7md text-gray-300 mb-8">
+                  Descubre de manera interactiva la ubicación de cada uno de los atractivos turísticos que hacen de Sigchos un destino inolvidable. Desde impresionantes paisajes naturales hasta sitios culturales llenos de historia, este mapa dinámico te permitirá ubicar fácilmente cada lugar, planificar tu ruta y vivir una experiencia completa en el corazón de Cotopaxi. ¡Haz clic en los marcadores y comienza tu recorrido virtual por Sigchos!
                 </p>
+                <button
+                  onClick={() => {
+                    const mapSection = document.getElementById('map-section');
+                    mapSection?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="mapa-btn py-4 px-8 bg-transparent border-2 border-white text-white rounded-full hover:bg-white hover:text-[#12141d] transition-all duration-300 text-lg font-semibold">
+                  MIRAR
+                </button>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    const mapSection = document.getElementById('map-section');
+                    mapSection?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="absolute bottom-24 right-24 w-16 h-16 rounded-full border-2 border-white flex items-center justify-center hover:bg-white hover:text-[#12141d] text-white transition-all duration-300"
+                >
+                  <svg
+                    className="w-8 h-8"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                    />
+                  </svg>
+                </button>
               </div>
             </div>
           </section>
 
           {/* Contenido principal: columna izquierda (cards) + derecha (mapa) */}
           <section id="mapa-container" ref={mapSectionRef} className="relative z-10 px-4 sm:px-8 md:px-12 py-10" >
+            <h2 className="text-5xl font-black text-white mb-12 text-center">
+              Mapa SIGCHOS <span className="bg-gradient-to-r from-[#99437a] to-[#3e3473] text-transparent bg-clip-text">DINÁMICO</span>
+            </h2>
             {uiError && (
               <div
                 role="alert"
@@ -177,7 +211,8 @@ export default function MapaSigchos() {
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Columna izquierda: LISTA DE CARDS */}
-              <div className="lg:col-span-5 space-y-4">
+              {/* Cards izquierda (con scroll) */}
+              <div className="lg:col-span-5 h-[600px] overflow-y-auto pr-4 space-y-4 custom-scrollbar">
                 {loading ? (
                   <div className="text-white/60">Cargando sitios...</div>
                 ) : sitios.length === 0 ? (
@@ -195,7 +230,6 @@ export default function MapaSigchos() {
                   ))
                 )}
               </div>
-
               {/* Columna derecha: MAPA */}
               <div className="lg:col-span-7">
                 <div
@@ -220,7 +254,6 @@ export default function MapaSigchos() {
             </div>
           </section>
         </main>
-
         <Footer />
       </div>
     </>
