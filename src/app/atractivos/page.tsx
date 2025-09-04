@@ -8,6 +8,22 @@ import { getSitiosNaturalesConUbicacion } from '@/services/sitios.service';
 import type { SitioConUbicacion } from '@/types/db';
 
 export default function AtractivosTuristicos() {
+  const [sitiosSlider, setSitiosSlider] = useState<SitioConUbicacion[] | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    getSitiosNaturalesConUbicacion()
+      .then((data) => {
+        if (!mounted) return;
+        setSitiosSlider(data ?? []);
+      })
+      .catch((err) => {
+        console.error('[atractivos.page] error loading slider sitios:', err);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
   return (
     <>
       <div className="min-h-screen flex flex-col">
@@ -94,44 +110,13 @@ export default function AtractivosTuristicos() {
                   document.addEventListener('mousemove', handleMouseMove);
                   document.addEventListener('mouseup', handleMouseUp);
                 }}>
-                {[
-                  {
-                    image: '/Maqui-Machay.webp',
-                    title: 'Maqui y Machay',
-                    subtitle: 'Maqui y Machay',
-                    url: '/atractivos/maqui-y-machay'
-                  },
-                  {
-                    image: '/Bosque_Protector_Sarapullo.jpg',
-                    title: 'Bosque Protector',
-                    subtitle: 'Palo Quemado',
-                    url: '/atractivos/sarapullo'
-                  },
-                  {
-                    image: '/licamancha.jpeg',
-                    title: 'Licamancha',
-                    subtitle: 'Guacusig',
-                    url: '/atractivos/licamancha'
-                  },
-                  {
-                    image: '/Toachi.jpg',
-                    title: 'Cañón del Toachi',
-                    subtitle: 'Guacusig',
-                    url: '/atractivos/canon-del-toachi'
-                  },
-                  {
-                    image: '/Los_Ilinizas.jpg',
-                    title: 'Los Ilinizas',
-                    subtitle: 'Guacusig',
-                    url: '/atractivos/los-ilinizas'
-                  }
-                ].map((item, index) => (
-                  <a href={item.url} key={index} className="atractivo-slide">
+                {(sitiosSlider ?? []).map(({ sitio }, index) => (
+                  <a href={`/atractivos/${sitio.Id}`} key={sitio.Id ?? index} className="atractivo-slide">
                     <div className="atractivo-slide-content">
-                      <img src={item.image} alt={item.title} className="atractivo-slide-img" />
+                      <img src={sitio.ImagenUrl ?? '/file.svg'} alt={sitio.Nombre} className="atractivo-slide-img" />
                       <div className="atractivo-slide-overlay">
-                        <h3 className="atractivo-slide-title">{item.title}</h3>
-                        <p className="atractivo-slide-subtitle">{item.subtitle}</p>
+                        <h3 className="atractivo-slide-title">{sitio.Nombre}</h3>
+                        <p className="atractivo-slide-subtitle">{(sitio as any).Barrio ?? ''}</p>
                       </div>
                     </div>
                   </a>

@@ -129,3 +129,68 @@ export async function getSitiosNaturalesConUbicacion(): Promise<
       : null,
   }));
 }
+
+export async function getSitioById(id: number): Promise<SitioConUbicacion | null> {
+  try {
+    const { data: sitio, error } = await supabase
+      .from('SitioTuristico')
+      .select('Id,Nombre,Descripcion,ImagenUrl,IdUbicacion,IdParroquia,IdCategoria')
+      .eq('Id', id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[sitios.service] getSitioById error:', error);
+      return null;
+    }
+    if (!sitio) return null;
+
+    let ubicacion = null;
+    if (sitio.IdUbicacion) {
+      const { data: ub, error: ubErr } = await supabase
+        .from('Ubicacion')
+        .select('Id,Latitud,Longitud')
+        .eq('Id', sitio.IdUbicacion)
+        .maybeSingle();
+      if (ubErr) {
+        console.error('[sitios.service] getSitioById Ubicacion error:', ubErr);
+      } else {
+        ubicacion = ub ?? null;
+      }
+    }
+
+    // Fetch related Parroquia name (if any)
+    let parroquia = null;
+    if (sitio.IdParroquia) {
+      const { data: p, error: pErr } = await supabase
+        .from('Parroquia')
+        .select('Id,Nombre,ImagenUrl')
+        .eq('Id', sitio.IdParroquia)
+        .maybeSingle();
+      if (pErr) {
+        console.error('[sitios.service] getSitioById Parroquia error:', pErr);
+      } else {
+        parroquia = p ?? null;
+      }
+    }
+
+    // Fetch related category (ItemCatalogo) name if available
+    let categoria = null;
+    if (sitio.IdCategoria) {
+      const { data: c, error: cErr } = await supabase
+        .from('ItemCatalogo')
+        .select('Id,Nombre,Codigo,Valor')
+        .eq('Id', sitio.IdCategoria)
+        .maybeSingle();
+      if (cErr) {
+        console.error('[sitios.service] getSitioById Categoria error:', cErr);
+      } else {
+        categoria = c ?? null;
+      }
+    }
+
+    return { sitio, ubicacion, parroquia, categoria } as unknown as SitioConUbicacion & { parroquia?: any; categoria?: any };
+  } catch (err) {
+    console.error('[sitios.service] unexpected error in getSitioById:', err);
+    return null;
+  }
+}

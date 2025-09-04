@@ -23,9 +23,9 @@ export default function Footer() {
         <a href="/admin">ADMIN PANEL</a>
           </nav>
           <div className="final-legal">
-        <a href="/terms">Terms & Conditions</a>
-        <a href="/privacy">Privacy Policy</a>
-        <a href="/cookies">Cookie Policy</a>
+        <a href="/politcs/terminos-y-condiciones">Terms & Conditions</a>
+        <a href="/politcs/politica-privacidad">Privacy Policy</a>
+        <a href="/politcs/aviso-cookies">Cookie Policy</a>
           </div>
           <div className="final-copyright">
         Powered by GAD Municipal Sigchos © 2025 Visita{" "}

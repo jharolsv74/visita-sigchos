@@ -6,6 +6,8 @@ import Footer from '@/components/Footer';
 import AutoridadesPreview from '../components/AutoridadesPreview';
 import { getParroquias } from '@/services/parroquias.service';
 import { normalizeToSlug } from '@/services/parroquias.service';
+import { getSitiosNaturalesConUbicacion } from '@/services/sitios.service';
+import type { SitioConUbicacion } from '@/types/db';
 import { getCantones } from '@/services/cantones.service';
 import { getHome } from '@/services/home.service';
 import type { Parroquia, Canton } from '@/types/db';
@@ -18,21 +20,30 @@ export default function Home() {
   const [startIdx, setStartIdx] = useState(0);
   const [animating, setAnimating] = useState(false);
   const [parroquias, setParroquias] = useState<Parroquia[] | null>(null);
+  const [sitios, setSitios] = useState<SitioConUbicacion[] | null>(null);
+  const [sitiosLoading, setSitiosLoading] = useState(true);
   const [heroImage, setHeroImage] = useState<string | null>(null);
   const [canton, setCanton] = useState<Canton | null>(null);
   const [cantonLoaded, setCantonLoaded] = useState(false);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const DESC_THRESHOLD = 160; // characters before showing "Ver más"
 
-  // Build the carousel items from DB rows when available (DB-only, no static fallback)
-  const itemsToUse = (parroquias && parroquias.length > 0)
-    ? parroquias.map((p) => ({
-      image: p.ImagenUrl || '/icon-site-sigchos.png',
-      title: p.Nombre || 'Parroquia',
-      desc: p.Descripcion || '',
-      btn: p.Nombre || 'Ver'
+  // Build the carousel items from Sitios (preferred) or Parroquias as fallback
+  const itemsToUse = (sitios && sitios.length > 0)
+    ? sitios.map(({ sitio, ubicacion }) => ({
+      image: sitio.ImagenUrl || '/icon-site-sigchos.png',
+      title: sitio.Nombre || 'Sitio',
+      desc: sitio.Descripcion || '',
+      id: sitio.Id,
     }))
-    : [];
+    : (parroquias && parroquias.length > 0)
+      ? parroquias.map((p) => ({
+        image: p.ImagenUrl || '/icon-site-sigchos.png',
+        title: p.Nombre || 'Parroquia',
+        desc: p.Descripcion || '',
+        id: undefined,
+      }))
+      : [];
 
   const total = itemsToUse.length;
 
@@ -72,6 +83,25 @@ export default function Home() {
         setParroquias(data);
       } catch (err) {
         console.error('Failed to fetch parroquias', err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  // Fetch sitios to use in carousels
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setSitiosLoading(true);
+        const data = await getSitiosNaturalesConUbicacion();
+        if (!mounted) return;
+        setSitios(data ?? []);
+      } catch (err) {
+        console.error('Failed to fetch sitios', err);
+        if (mounted) setSitios([]);
+      } finally {
+        if (mounted) setSitiosLoading(false);
       }
     })();
     return () => { mounted = false; };
@@ -202,14 +232,19 @@ export default function Home() {
                       className="carousel-btn"
                       onClick={() => {
                         try {
-                          const slug = normalizeToSlug(String(item.btn || item.title || 'parroquia'));
-                          router.push(`/parroquias/${slug}`);
+                          // If this item comes from sitios, navigate to atractivo detail, otherwise fallback to parroquia slug
+                          if ((item as any).id) {
+                            router.push(`/atractivos/${(item as any).id}`);
+                          } else {
+                            const slug = normalizeToSlug(String(item.title || 'parroquia'));
+                            router.push(`/parroquias/${slug}`);
+                          }
                         } catch (err) {
-                          console.error('Failed to navigate to parroquia', err);
+                          console.error('Failed to navigate', err);
                         }
                       }}
                     >
-                      {item.btn}
+                      {item.title}
                     </button>
                   </div>
                   {/* inline Ver menos now shown inside the description when expanded */}
@@ -340,44 +375,13 @@ Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca
               document.addEventListener('mousemove', handleMouseMove);
               document.addEventListener('mouseup', handleMouseUp);
             }}>
-            {[
-              {
-                image: '/Maqui-Machay.webp',
-                title: 'Maqui y Machay',
-                subtitle: 'Maqui y Machay',
-                url: '/atractivos/maqui-y-machay'
-              },
-              {
-                image: '/Bosque_Protector_Sarapullo.jpg',
-                title: 'Bosque Protector',
-                subtitle: 'Palo Quemado',
-                url: '/atractivos/sarapullo'
-              },
-              {
-                image: '/licamancha.jpeg',
-                title: 'Licamancha',
-                subtitle: 'Guacusig',
-                url: '/atractivos/licamancha'
-              },
-              {
-                image: '/Toachi.jpg',
-                title: 'Cañón del Toachi',
-                subtitle: 'Guacusig',
-                url: '/atractivos/canon-del-toachi'
-              },
-              {
-                image: '/Los_Ilinizas.jpg',
-                title: 'Los Ilinizas',
-                subtitle: 'Guacusig',
-                url: '/atractivos/los-ilinizas'
-              }
-            ].map((item, index) => (
-              <a href={item.url} key={index} className="atractivo-slide">
+            {(sitios && sitios.length > 0 ? sitios : []).map(({ sitio, ubicacion }, index) => (
+              <a href={`/atractivos/${sitio.Id}`} key={sitio.Id} className="atractivo-slide">
                 <div className="atractivo-slide-content">
-                  <img src={item.image} alt={item.title} className="atractivo-slide-img" />
+                  <img src={sitio.ImagenUrl ?? '/file.svg'} alt={sitio.Nombre} className="atractivo-slide-img" />
                   <div className="atractivo-slide-overlay">
-                    <h3 className="atractivo-slide-title">{item.title}</h3>
-                    <p className="atractivo-slide-subtitle">{item.subtitle}</p>
+                    <h3 className="atractivo-slide-title">{sitio.Nombre}</h3>
+                    <p className="atractivo-slide-subtitle">{(sitio as any).Barrio ?? ''}</p>
                   </div>
                 </div>
               </a>
