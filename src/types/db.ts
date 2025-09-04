@@ -46,3 +46,12 @@ export type Autoridad = {
   ImagenUrl?: string | null;
   [key: string]: unknown;
 };
+
+export type Parroquia = {
+  Id: number;
+  IdCanton?: number | null;
+  Nombre: string;
+  Descripcion?: string | null;
+  ImagenUrl?: string | null;
+  [key: string]: unknown;
+};

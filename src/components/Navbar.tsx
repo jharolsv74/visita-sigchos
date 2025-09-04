@@ -17,7 +17,20 @@ export default function Navbar() {
     <nav className={`navbar${scrolled ? " navbar-scrolled" : ""}`}>
       <div
         className="navbar-logo"
-        style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          cursor: 'url("/head.cur"), pointer' // usa /head.cur para un cursor personalizado; cae a pointer si no existe
+        }}
+        role="link"
+        tabIndex={0}
+        onClick={() => (window.location.href = "/")}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+        window.location.href = "/";
+          }
+        }}
       >
         <span className="navbar-logo-text">
           Visita <span className="navbar-logo-bold">SIGCHOS</span>

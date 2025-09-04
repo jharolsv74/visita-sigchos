@@ -1,58 +1,43 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import AutoridadesPreview from '../components/AutoridadesPreview';
+import { getParroquias } from '@/services/parroquias.service';
+import type { Parroquia } from '@/types/db';
 
 export default function Home() {
 
-  // Datos del carrusel (puedes agregar más items aquí)
-  const carouselItems = [
-    {
-      image: "/parroquias/1.jpg",
-      title: <>Ciudad de Sigchos</>,
-      desc: <>Es conocida como el <b>"Jardín colgante de los Andes"</b> por su belleza natural y ubicación entre montañas.</>,
-      btn: "CIUDAD DE SIGCHOS"
-    },
-    {
-      image: "/parroquias/4.jpg",
-      title: <>LAS PAMPAS</>,
-      desc: <>Es una de las mayores productoras de leche de Cotopaxi, con una cultura profundamente campesina.</>,
-      btn: "LAS PAMPAS"
-    },
-    {
-      image: "/parroquias/3.jpg",
-      title: <>Isinliví</>,
-      desc: <>Pueblo de caminos sagrados y miradores infinitos, ideal para senderistas y buscadores de paz.</>,
-      btn: "Isinliví"
-    },
-    {
-      image: "/parroquias/2.jpg",
-      title: <>CHUGCHILÁN</>,
-      desc: <>Punto estratégico en la ruta del <b>Quilotoa Loop</b>, famosa por sus senderos de trekking y vistas espectaculares a la laguna del Quilotoa.</>,
-      btn: "CHUGCHILÁN"
-    },
-    {
-      image: "/parroquias/5.jpg",
-      title: <>PALO QUEMADO</>,
-      desc: <>Aquí la Sierra y la Costa se abrazan, creando una mezcla única de climas, sabores y culturas.</>,
-      btn: "PALO QUEMADO"
-    },
-    // Puedes agregar más objetos aquí
-  ];  // Configuración
   const visibleCards = 3; // Cuántas tarjetas mostrar a la vez
   const [startIdx, setStartIdx] = useState(0);
   const [animating, setAnimating] = useState(false);
-  const total = carouselItems.length;
+  const [parroquias, setParroquias] = useState<Parroquia[] | null>(null);
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const DESC_THRESHOLD = 160; // characters before showing "Ver más"
+
+  // Build the carousel items from DB rows when available (DB-only, no static fallback)
+  const itemsToUse = (parroquias && parroquias.length > 0)
+    ? parroquias.map((p) => ({
+      image: p.ImagenUrl || '/icon-site-sigchos.png',
+      title: p.Nombre || 'Parroquia',
+      desc: p.Descripcion || '',
+      btn: p.Nombre || 'Ver'
+    }))
+    : [];
+
+  const total = itemsToUse.length;
 
   // Función para obtener los items visibles, con repetición infinita
   const getVisibleItems = () => {
-    return Array.from({ length: visibleCards }, (_, i) => carouselItems[(startIdx + i) % total]);
+    if (total === 0) return [];
+    return Array.from({ length: visibleCards }, (_, i) => itemsToUse[(startIdx + i) % total]);
   };
 
   // Animación y cambio de índice
   const handlePrev = () => {
-    if (animating) return;
+  if (animating) return;
+  if (total === 0) return;
     setAnimating(true);
     setTimeout(() => {
       setStartIdx((prev) => (prev - 1 + total) % total);
@@ -60,13 +45,29 @@ export default function Home() {
     }, 350);
   };
   const handleNext = () => {
-    if (animating) return;
+  if (animating) return;
+  if (total === 0) return;
     setAnimating(true);
     setTimeout(() => {
       setStartIdx((prev) => (prev + 1) % total);
       setAnimating(false);
     }, 350);
   };
+
+  // Fetch parroquias on mount (first 6 rows)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const data = await getParroquias(0, 11); // fetch first 12 items as example
+        if (!mounted) return;
+        setParroquias(data);
+      } catch (err) {
+        console.error('Failed to fetch parroquias', err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   return (
     <>
@@ -79,19 +80,90 @@ export default function Home() {
           <button className="carousel-arrow" onClick={handlePrev} disabled={animating}>&#8592;</button>
         </div>
         <div className={`carousel-cards${animating ? " carousel-animating" : ""}`}>
-          {getVisibleItems().map((item, idx) => (
-            <div className={`carousel-card${idx === 1 ? " carousel-card-center" : ""}`} key={idx}>
-              <div className="carousel-card-bg" />
-              <div className="carousel-card-content">
-                <div className="carousel-card-image">
-                  <img src={item.image} alt={typeof item.title === 'string' ? item.title : 'Parroquia'} />
+          {getVisibleItems().map((item, idx) => {
+            const globalIdx = (startIdx + idx) % Math.max(1, total);
+            const isExpanded = expandedIdx === globalIdx;
+            const needsToggle = typeof item.desc === 'string' && item.desc.length > DESC_THRESHOLD;
+            const shortDesc = typeof item.desc === 'string' && item.desc.length > DESC_THRESHOLD ? item.desc.slice(0, DESC_THRESHOLD).trim() + '...' : item.desc;
+            const isCenter = idx === 1;
+            return (
+              <div className={`carousel-card${idx === 1 ? " carousel-card-center" : ""}`} key={idx}>
+                <div className="carousel-card-bg" />
+                <div className="carousel-card-content" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', height: '100%'}}>
+                  <div style={{textAlign: 'center'}}>
+                    <div className="carousel-card-image">
+                      <img src={item.image} alt={typeof item.title === 'string' ? item.title : 'Parroquia'} style={{maxWidth: '100%', height: '160px', objectFit: 'cover', borderRadius: 8}} />
+                    </div>
+                    <h2 className="carousel-title" style={{marginTop: 12}}>{item.title}</h2>
+                    <p className="carousel-desc" style={{marginTop: 8, minHeight: 48, maxWidth: 320, textAlign: 'justify'}}>
+                      {(() => {
+                        if (isExpanded && typeof item.desc === 'string') {
+                          return (
+                            <>
+                              {item.desc}
+                              <button
+                                onClick={() => setExpandedIdx(null)}
+                                style={{background: 'none', border: 'none', color: 'rgba(255, 255, 255, 1)', cursor: 'pointer', padding: 0, marginLeft: 6, fontSize: '0.95em'}}
+                                aria-label="Ver menos"
+                              >
+                                (ver menos)
+                              </button>
+                            </>
+                          );
+                        }
+                        if (needsToggle && typeof item.desc === 'string') {
+                          // If this slide is the center one, expand immediately.
+                          if (isCenter) {
+                            return (
+                              <>
+                                {shortDesc}
+                                <button
+                                  onClick={() => setExpandedIdx(globalIdx)}
+                                  style={{background: 'none', border: 'none', color: 'rgba(255, 255, 255, 1)', cursor: 'pointer', padding: 0, marginLeft: 6, fontSize: '0.95em'}}
+                                  aria-label="Ver más"
+                                >
+                                  (ver más)
+                                </button>
+                              </>
+                            );
+                          }
+
+                          // If it's a side slide, clicking should recentralize it then expand after animation
+                          return (
+                            <>
+                              {shortDesc}
+                              <button
+                                onClick={() => {
+                                  if (total === 0) return;
+                                  const targetStart = (startIdx + idx - 1 + total) % total; // make this item center
+                                  setAnimating(true);
+                                  setStartIdx(targetStart);
+                                  setTimeout(() => {
+                                    setAnimating(false);
+                                    const newCenterIdx = (targetStart + 1) % total;
+                                    setExpandedIdx(newCenterIdx);
+                                  }, 360);
+                                }}
+                                style={{background: 'none', border: 'none', color: 'rgba(255, 255, 255, 1)', cursor: 'pointer', padding: 0, marginLeft: 6, fontSize: '0.95em'}}
+                                aria-label="Centrar y ver más"
+                              >
+                                (ver más)
+                              </button>
+                            </>
+                          );
+                        }
+                        return item.desc;
+                      })()}
+                    </p>
+                  </div>
+                  <div style={{width: '100%', display: 'flex', justifyContent: 'center', gap: 8, marginTop: 12}}>
+                    <button className="carousel-btn">{item.btn}</button>
+                  </div>
+                  {/* inline Ver menos now shown inside the description when expanded */}
                 </div>
-                <h2 className="carousel-title">{item.title}</h2>
-                <p className="carousel-desc">{item.desc}</p>
-                <button className="carousel-btn">{item.btn}</button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <div className="carousel-nav carousel-nav-right">
           <button className="carousel-arrow" onClick={handleNext} disabled={animating}>&#8594;</button>
@@ -138,35 +210,7 @@ Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca
         <p className="autoridades-subtitle">
           El <b>Gobierno Autónomo Descentralizado Municipal de Sigchos</b> está conformado por líderes comprometidos con el desarrollo, la transparencia y el bienestar de todos sus habitantes. Conoce a nuestras autoridades, su visión y el trabajo que realizan día a día por un Sigchos más próspero y sostenible.
         </p>
-        <div className="autoridades-cards">
-          <div className="autoridad-card">
-            <img className="autoridad-img" src="/Carlos Lisintuña.jpg" alt="Autoridad 1" />
-            <div className="autoridad-info">
-              <div className="autoridad-nombre">Sr. Carlos Armando Lisiñtuña Lutuala</div>
-              <div className="autoridad-cargo">Concejal</div>
-              <div className="autoridad-desc">Concejal y Preside la comisión de Turismo, Ambiente, Educación, Cultura, Deportes y Recreación.</div>
-            </div>
-          </div>
-          <div className="autoridad-card">
-            <img className="autoridad-img" src="/Marco Granja.jpg" alt="Autoridad 2" />
-            <div className="autoridad-info">
-              <div className="autoridad-nombre">Sr. Marco Rafael Granja Maldonado</div>
-              <div className="autoridad-cargo">Concejal</div>
-              <div className="autoridad-desc">Concejal, integra las comisiones de Legislación & Fiscalización e Igualdad y Género; también lidera Servicios Públicos, Plazas, Mercados y Camales.</div>
-            </div>
-          </div>
-          <div className="autoridad-card">
-            <img className="autoridad-img" src="/Mario Porras.jpg" alt="Autoridad 3" />
-            <div className="autoridad-info">
-              <div className="autoridad-nombre">Sr. Mario Germán Porras Pérez</div>
-              <div className="autoridad-cargo">Concejal</div>
-              <div className="autoridad-desc">Concejal y Preside la Comisión de Planificación y Obras Públicas y participa en las comisiones de Legislación y Turismo & Ambiente.</div>
-            </div>
-          </div>
-        </div>
-        <div className="autoridades-btn-container">
-          <button className="autoridades-btn">VER TODAS LAS AUTORIDADES</button>
-        </div>
+        <AutoridadesPreview />
       </section>
       {/* Sección contacto con gradiente */}
       <section className="contacto-gradient-section" ref={(el) => {
@@ -191,7 +235,7 @@ Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca
             </svg>
           </span>
           <span className="contacto-gradient-text">¿Necesitas más información?</span>
-          <button className="contacto-gradient-btn">CONTÁCTANOS</button>
+          <button className="contacto-gradient-btn" onClick={() => (window.location.href = "/contactos")}>CONTÁCTANOS</button>
         </div>
       </section>
 
@@ -207,7 +251,7 @@ Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca
             <p className="atractivos-desc">
               Desde <b>lagunas mágicas</b> y <b>cascadas imponentes</b> hasta <b>ruinas incas</b> y bosques milenarios, Sigchos te espera con aventuras inolvidables. Haz clic en cada atractivo turístico y descubre la historia, belleza y emociones que cada lugar tiene para ofrecer. ¡Tu próxima experiencia comienza aquí!
             </p>
-            <button className="atractivos-btn">VER ATRACTIVOS</button>
+            <button className="atractivos-btn" onClick={() => (window.location.href = "/atractivos")}>VER ATRACTIVOS</button>
           </div>
         </div>
         <div className="atractivos-slider">
@@ -303,9 +347,7 @@ Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca
         <div className="galeria-container">
           <div className="galeria-text">
             <h2 className="galeria-title">Galería Pequeña</h2>
-            <p className="galeria-desc">
-              Cada rincón de Sigchos guarda una historia, una tradición y una vista inolvidable. Disfruta este recorrido visual por nuestros paisajes, costumbres y atractivos turísticos que hacen de este cantón un lugar único por descubrir. Desde imponentes montañas y lagunas cristalinas hasta tesoros ancestrales y senderos naturales, las imágenes capturan la esencia viva de un territorio que enamora a todo visitante. ¡Déjate inspirar y explora todo lo que Sigchos tiene para ofrecer!
-            </p>
+            <p className="galeria-desc">Cada rincón de Sigchos guarda una historia, una tradición y una vista inolvidable. Disfruta este recorrido visual por nuestros paisajes, costumbres y atractivos turísticos que hacen de este cantón un lugar único por descubrir. Desde imponentes montañas y lagunas cristalinas hasta tesoros ancestrales y senderos naturales, las imágenes capturan la esencia viva de un territorio que enamora a todo visitante. ¡Déjate inspirar y explora todo lo que Sigchos tiene para ofrecer!</p>
             <button className="galeria-btn">VER GALERÍA COMPLETA</button>
           </div>
 
