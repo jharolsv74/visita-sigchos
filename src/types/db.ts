@@ -55,3 +55,32 @@ export type Parroquia = {
   ImagenUrl?: string | null;
   [key: string]: unknown;
 };
+
+export type Home = {
+  Id: number;
+  Nombre: string;
+  ImagenUrl?: string | null;
+  [key: string]: unknown;
+};
+
+export type Canton = {
+  Id: number;
+  Nombre: string;
+  Descripcion?: string | null;
+  ImagenUrl?: string | null;
+  [key: string]: unknown;
+};
+
+export type Galeria = {
+  Id: number;
+  Nombre: string;
+  Descripcion?: string | null;
+  [key: string]: unknown;
+};
+
+export type DetalleGaleria = {
+  Id: number;
+  IdGaleria: number;
+  ImagenUrl: string | null;
+  [key: string]: unknown;
+};

@@ -5,14 +5,22 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import AutoridadesPreview from '../components/AutoridadesPreview';
 import { getParroquias } from '@/services/parroquias.service';
-import type { Parroquia } from '@/types/db';
+import { normalizeToSlug } from '@/services/parroquias.service';
+import { getCantones } from '@/services/cantones.service';
+import { getHome } from '@/services/home.service';
+import type { Parroquia, Canton } from '@/types/db';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const router = useRouter();
 
   const visibleCards = 3; // Cuántas tarjetas mostrar a la vez
   const [startIdx, setStartIdx] = useState(0);
   const [animating, setAnimating] = useState(false);
   const [parroquias, setParroquias] = useState<Parroquia[] | null>(null);
+  const [heroImage, setHeroImage] = useState<string | null>(null);
+  const [canton, setCanton] = useState<Canton | null>(null);
+  const [cantonLoaded, setCantonLoaded] = useState(false);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const DESC_THRESHOLD = 160; // characters before showing "Ver más"
 
@@ -69,9 +77,42 @@ export default function Home() {
     return () => { mounted = false; };
   }, []);
 
+  // Fetch Canton row to populate Sigchos info section (use first row)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const rows = await getCantones(0, 0);
+        if (!mounted) return;
+        setCanton((rows && rows.length > 0) ? rows[0] : null);
+        setCantonLoaded(true);
+      } catch (err) {
+        console.error('Failed to fetch Canton row', err);
+        if (mounted) setCantonLoaded(true);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  // Fetch Home row to get hero image
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const home = await getHome();
+        if (!mounted) return;
+        const img = home && typeof home['ImagenUrl'] === 'string' ? home['ImagenUrl'] as string : null;
+        setHeroImage(img);
+      } catch (err) {
+        console.error('Failed to fetch Home row', err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
   return (
     <>
-      <section className="main-hero">
+  <section className="main-hero" style={heroImage ? {backgroundImage: `url('${heroImage}')`} : undefined}>
         <Navbar />
         {/* Hero content aquí si lo necesitas */}
       </section>
@@ -157,7 +198,19 @@ export default function Home() {
                     </p>
                   </div>
                   <div style={{width: '100%', display: 'flex', justifyContent: 'center', gap: 8, marginTop: 12}}>
-                    <button className="carousel-btn">{item.btn}</button>
+                    <button
+                      className="carousel-btn"
+                      onClick={() => {
+                        try {
+                          const slug = normalizeToSlug(String(item.btn || item.title || 'parroquia'));
+                          router.push(`/parroquias/${slug}`);
+                        } catch (err) {
+                          console.error('Failed to navigate to parroquia', err);
+                        }
+                      }}
+                    >
+                      {item.btn}
+                    </button>
                   </div>
                   {/* inline Ver menos now shown inside the description when expanded */}
                 </div>
@@ -177,12 +230,21 @@ export default function Home() {
           <span className="sigchos-info-line" />
         </h2>
         <div className="sigchos-info-content">
-          <img className="sigchos-info-img" src="/Home_v2.jpg" alt="Sigchos panorámica" />
+          <img className="sigchos-info-img" src={canton?.ImagenUrl || '/Home_v2.jpg'} alt={canton?.Nombre || 'Sigchos panorámica'} />
           <div className="sigchos-info-textbox">
-            <h3 className="sigchos-info-heading">Sigchos Cantón de Cotopaxi</h3>
-            <p className="sigchos-info-desc">
-Sigchos es uno de los siete cantones de la provincia de Cotopaxi, Ecuador. Se encuentra al noroeste de Latacunga, en medio de la Cordillera Occidental de los Andes, con un paisaje accidentado y quebrado, situado en las cuencas de los ríos Toachi y Pilatón. Su nombre deriva de "Sigchila", el nombre de un cacique local, cuyo significado se interpreta como “brazo de hierro”. La temperatura media anual cercana a 13°C, con fluctuaciones entre 9°C y 20°C. La precipitación anual se sitúa entre 500 y 1000 mm.
-            </p>
+            {(!cantonLoaded) ? (
+              <div style={{color: '#fff'}}>Cargando información...</div>
+            ) : (!canton) ? (
+              <>
+                <h3 className="sigchos-info-heading">Sigchos Cantón de Cotopaxi</h3>
+                <p className="sigchos-info-desc">Sigchos es uno de los siete cantones de la provincia de Cotopaxi, Ecuador. Se encuentra al noroeste de Latacunga, en medio de la Cordillera Occidental de los Andes, con un paisaje accidentado y quebrado, situado en las cuencas de los ríos Toachi y Pilatón. Su nombre deriva de "Sigchila", el nombre de un cacique local, cuyo significado se interpreta como “brazo de hierro”. La temperatura media anual cercana a 13°C, con fluctuaciones entre 9°C y 20°C. La precipitación anual se sitúa entre 500 y 1000 mm.</p>
+              </>
+            ) : (
+              <>
+                <h3 className="sigchos-info-heading">{canton.Nombre}</h3>
+                <p className="sigchos-info-desc">{canton.Descripcion}</p>
+              </>
+            )}
             <h4 className="sigchos-info-subheading">Fecha de Cantonización</h4>
             <p className="sigchos-info-desc">July 21, 1992</p>
             <h4 className="sigchos-info-subheading">Platos Típicos</h4>
@@ -333,10 +395,10 @@ Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca
               <p className="zapallin-message">
                 Me llamo Zapallín, porque nací entre zapallos, tradiciones campesinas y leyendas antiguas. No soy solo una verdura con personalidad: soy el guardián de los festejos, de las danzas, los sabores y los paisajes de <span className="zapallin-highlight">SIGCHOS</span> en el corazón de Cotopaxi. Aquí, cada comunidad tiene su propia forma de celebrar la vida. ¿Te atreves a conocer las fiestas que me dieron vida? acompañame por un recorrido lleno de festividad, color y magia serrana. ¡Vamos que empieza la fiesta!
               </p>
-              <button className="zapallin-btn">VER TODAS LAS FESTIVIDADES</button>
+                <button className="zapallin-btn" style={{ display: 'block', margin: '16px auto 0' }}>VER TODAS LAS FESTIVIDADES</button>
             </div>
             <div className="zapallin-character">
-              <img src="/Zapallín_curioso.png" alt="Zapallín" className="zapallin-img" />
+              <img src="/Zapallin_curioso.png" alt="Zapallin" className="zapallin-img" />
             </div>
           </div>
         </div>
@@ -348,7 +410,7 @@ Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca
           <div className="galeria-text">
             <h2 className="galeria-title">Galería Pequeña</h2>
             <p className="galeria-desc">Cada rincón de Sigchos guarda una historia, una tradición y una vista inolvidable. Disfruta este recorrido visual por nuestros paisajes, costumbres y atractivos turísticos que hacen de este cantón un lugar único por descubrir. Desde imponentes montañas y lagunas cristalinas hasta tesoros ancestrales y senderos naturales, las imágenes capturan la esencia viva de un territorio que enamora a todo visitante. ¡Déjate inspirar y explora todo lo que Sigchos tiene para ofrecer!</p>
-            <button className="galeria-btn">VER GALERÍA COMPLETA</button>
+            <button className="galeria-btn" onClick={() => window.location.href = '/detalleGaleria'}>VER GALERÍA COMPLETA</button>
           </div>
 
           <div className="galeria-content">
