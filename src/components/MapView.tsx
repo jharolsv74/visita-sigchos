@@ -7,14 +7,15 @@ import type { LatLng } from "@/utils/geo";
 
 type Props = {
     sitios: SitioConUbicacion[];
-    selectedRoute?: { geojson: GeoJSON.FeatureCollection; user: LatLng; destino: LatLng } | null;
-    onMarkerClick?: (sitioId: number) => void;
+    selectedRoute?: {
+        geojson: GeoJSON.FeatureCollection;
+        user: LatLng;
+        destino: LatLng;
+        destinoNombre: string;
+    } | null;
 };
 
-// Carga dinámica de Leaflet con ssr: false
-const MapViewInner = dynamic(() => import("./MapViewInner"), {
-    ssr: false,
-});
+const MapViewInner = dynamic(() => import("./MapViewInner"), { ssr: false });
 
 export default function MapView(props: Props) {
     return <MapViewInner {...props} />;

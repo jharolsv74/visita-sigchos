@@ -12,37 +12,52 @@ type Props = {
 };
 
 export default function SitioCard({ id, nombre, descripcion, imagenUrl, onVerEnMapa }: Props) {
-    // Mantén tus clases actuales; ajusta los nombres si ya existen en tu CSS.
     return (
         <article
-            className="place-card rounded-xl overflow-hidden shadow-md bg-white/5 border border-white/10 backdrop-blur"
             data-sitio-id={id}
+            className="location-card bg-gradient-to-r from-[#99437a] to-[#3e3473] p-6 rounded-xl shadow-md border border-white/10"
         >
-            {/* Mantengo layout típico de tus cards; no cambio estilos clave */}
-            <div className="relative w-full aspect-[16/9]">
-                {imagenUrl ? (
-                    <Image src={imagenUrl} alt={nombre} fill className="object-cover" />
-                ) : (
-                    <div className="w-full h-full bg-gray-800" />
-                )}
-            </div>
+            <div className="flex items-center gap-6">
+                {/* Avatar circular 80x80 */}
+                <div className="w-20 h-20 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-white/20">
+                    {imagenUrl ? (
+                        <div className="relative w-full h-full">
+                            <Image
+                                src={imagenUrl}
+                                alt={nombre}
+                                fill
+                                className="object-cover"
+                                sizes="80px"
+                                priority={false}
+                            />
+                        </div>
+                    ) : (
+                        <img
+                            src="/Los_Ilinizas.jpg" // fallback local; cambia si deseas
+                            alt="imagen del sitio"
+                            className="w-full h-full object-cover"
+                        />
+                    )}
+                </div>
 
-            <div className="p-4 space-y-2">
-                <h3 className="text-white font-semibold text-base">{nombre}</h3>
-                {descripcion ? (
-                    <p className="text-white/70 text-sm line-clamp-3">{descripcion}</p>
-                ) : (
-                    <p className="text-white/40 text-sm italic">Sin descripción</p>
-                )}
+                {/* Texto + botón */}
+                <div className="flex-1 min-w-0">
+                    <h3 className="text-2xl font-bold text-white mb-2">{nombre}</h3>
+                    <p className="text-gray-200/90 text-sm leading-relaxed line-clamp-4">
+                        {descripcion || "Sin descripción disponible."}
+                    </p>
 
-                <button
-                    type="button"
-                    className="mt-2 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg bg-[#543fb2] hover:opacity-90 text-white transition"
-                    onClick={onVerEnMapa}
-                    aria-label={`Ver ${nombre} en el mapa`}
-                >
-                    Ver en mapa
-                </button>
+                    <div className="mt-4">
+                        <button
+                            type="button"
+                            onClick={onVerEnMapa}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                            aria-label={`Ver ${nombre} en el mapa`}
+                        >
+                            Ver en mapa
+                        </button>
+                    </div>
+                </div>
             </div>
         </article>
     );
