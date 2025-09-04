@@ -3,7 +3,7 @@
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import SitioCard from "@/components/SitioCard";
 import MapView from "@/components/MapView";
 import { getSitiosNaturalesConUbicacion } from "@/services/sitios.service";
@@ -22,15 +22,17 @@ export default function MapaSigchos() {
   const [loading, setLoading] = useState(true);
   const [uiError, setUiError] = useState<UiError | null>(null);
 
-  // Estado de ruta seleccionada
   const [selectedRoute, setSelectedRoute] = useState<{
     geojson: RutaGeoJSON;
     user: LatLng;
     destino: LatLng;
     sitioId: number;
+    destinoNombre: string;
   } | null>(null);
 
-  // Carga de sitios naturales
+  // 👉 Ref hacia el contenedor del mapa para hacer scroll
+  const mapSectionRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -48,103 +50,100 @@ export default function MapaSigchos() {
     };
   }, []);
 
-  const handleVerEnMapa = useCallback(async (sitioId: number) => {
-    setUiError(null);
+  // Desplaza la vista al mapa con scroll suave
+  const scrollToMap = useCallback(() => {
+    // Pequeño delay para asegurar que el DOM y el mapa hayan renderizado la ruta
+    requestAnimationFrame(() => {
+      const node = mapSectionRef.current ?? document.getElementById("mapa-container");
+      if (node) {
+        // Opcional: darle foco para accesibilidad con teclado
+        (node as HTMLElement).focus?.();
+        node.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  }, []);
 
-    // 1) Hallar el sitio y su ubicación
-    const s = sitios.find((x) => x.sitio.Id === sitioId);
-    if (!s || !s.ubicacion) {
-      setUiError({ code: "INVALID_COORDS", msg: "El sitio no tiene coordenadas válidas." });
-      return;
-    }
-    const destino: LatLng = { lat: s.ubicacion.Latitud, lng: s.ubicacion.Longitud };
+  const handleVerEnMapa = useCallback(
+    async (sitioId: number) => {
+      setUiError(null);
 
-    // 2) Obtener geolocalización del usuario
-    const user = await new Promise<LatLng>((resolve, reject) => {
-      if (!("geolocation" in navigator)) {
-        reject(new Error("Geolocalización no soportada"));
+      const s = sitios.find((x) => x.sitio.Id === sitioId);
+      if (!s || !s.ubicacion) {
+        setUiError({ code: "INVALID_COORDS", msg: "El sitio no tiene coordenadas válidas." });
         return;
       }
-      navigator.geolocation.getCurrentPosition(
-        (pos) =>
-          resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        (err) => reject(err),
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    }).catch((e) => {
-      console.warn("Geo error:", e);
-      setUiError({
-        code: "GEO_DENIED",
-        msg:
-          "No se pudo obtener tu ubicación. Revisa permisos de geolocalización del navegador.",
-      });
-      return null;
-    });
+      const destino: LatLng = { lat: s.ubicacion.Latitud, lng: s.ubicacion.Longitud };
+      const destinoNombre = s.sitio.Nombre;
 
-    if (!user || !isValidLatLng(user) || !isValidLatLng(destino)) {
-      if (!uiError) {
+      const user = await new Promise<LatLng>((resolve, reject) => {
+        if (!("geolocation" in navigator)) {
+          reject(new Error("Geolocalización no soportada"));
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          (err) => reject(err),
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      }).catch((e) => {
+        console.warn("Geo error:", e);
+        setUiError({
+          code: "GEO_DENIED",
+          msg: "No se pudo obtener tu ubicación. Revisa permisos de geolocalización del navegador.",
+        });
+        return null;
+      });
+
+      if (!user || !isValidLatLng(user) || !isValidLatLng(destino)) {
         setUiError({
           code: "INVALID_COORDS",
           msg: "Coordenadas inválidas para calcular la ruta.",
         });
+        return;
       }
-      return;
-    }
 
-    // 3) Cache local
-    const cacheKey = makeRouteCacheKey(sitioId, user);
-    const cached = cacheGet<RutaGeoJSON>(cacheKey);
-    if (cached) {
-      setSelectedRoute({ geojson: cached, user, destino, sitioId });
-      return;
-    }
+      const cacheKey = makeRouteCacheKey(sitioId, user);
+      const cached = cacheGet<RutaGeoJSON>(cacheKey);
+      if (cached) {
+        setSelectedRoute({ geojson: cached, user, destino, sitioId, destinoNombre });
+        scrollToMap(); // 👈 si viene de caché, también scrollea
+        return;
+      }
 
-    // 4) Llamada al API interno /api/route (proxy ORS)
-    try {
-      const res = await fetch("/api/route", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user, sitio: destino }),
-      });
-
-      if (!res.ok) {
-        const detail = await res.json().catch(() => ({}));
-        console.error("ORS fail:", detail);
-        setUiError({
-          code: "ORS_FAIL",
-          msg: "No se pudo calcular la ruta (servicio de direcciones no disponible).",
+      try {
+        const res = await fetch("/api/route", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user, sitio: destino }),
         });
-        return;
+
+        if (!res.ok) {
+          const detail = await res.json().catch(() => ({}));
+          console.error("ORS fail:", detail);
+          setUiError({
+            code: "ORS_FAIL",
+            msg: "No se pudo calcular la ruta (servicio de direcciones no disponible).",
+          });
+          return;
+        }
+
+        const geojson = (await res.json()) as RutaGeoJSON;
+        if (!geojson?.features?.length) {
+          setUiError({ code: "ORS_FAIL", msg: "La respuesta de ruta viene vacía." });
+          return;
+        }
+
+        cacheSet(cacheKey, geojson);
+        setSelectedRoute({ geojson, user, destino, sitioId, destinoNombre });
+        scrollToMap(); // 👈 scrollea tras dibujar la ruta
+      } catch (e) {
+        console.error(e);
+        setUiError({ code: "ORS_FAIL", msg: "No se pudo calcular la ruta (error de red)." });
       }
-
-      const geojson = (await res.json()) as RutaGeoJSON;
-      if (!geojson?.features?.length) {
-        setUiError({ code: "ORS_FAIL", msg: "La respuesta de ruta viene vacía." });
-        return;
-      }
-
-      cacheSet(cacheKey, geojson);
-      setSelectedRoute({ geojson, user, destino, sitioId });
-    } catch (e) {
-      console.error(e);
-      setUiError({
-        code: "ORS_FAIL",
-        msg: "No se pudo calcular la ruta (error de red).",
-      });
-    }
-  }, [sitios, uiError]);
-
-  // Permite cambiar de sitio y limpiar ruta anterior
-  const handleMarkerClick = useCallback(
-    (sitioId: number) => {
-      // Si el usuario hace click en un marcador, simplemente selecciona ese sitio (sin recalcular ruta)
-      // o podrías disparar el mismo flujo de "Ver en mapa":
-      void handleVerEnMapa(sitioId);
     },
-    [handleVerEnMapa]
+    [sitios, scrollToMap]
   );
 
-  // === RENDER ===
   return (
     <>
       <div className="min-h-screen flex flex-col">
@@ -157,7 +156,6 @@ export default function MapaSigchos() {
             <div className="absolute inset-0 bg-[#12141d] opacity-80"></div>
             <div className="relative z-10 flex flex-col justify-center h-screen px-12">
               <div className="max-w-[600px]">
-                {/* Mantén tu copy/CTA exactos si ya los tenías */}
                 <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Explora Sigchos</h1>
                 <p className="text-white/80">
                   Descubre sus maravillas naturales y planifica tu ruta fácilmente.
@@ -167,7 +165,7 @@ export default function MapaSigchos() {
           </section>
 
           {/* Contenido principal: columna izquierda (cards) + derecha (mapa) */}
-          <section className="relative z-10 px-4 sm:px-8 md:px-12 py-10">
+          <section id="mapa-container" ref={mapSectionRef} className="relative z-10 px-4 sm:px-8 md:px-12 py-10" >
             {uiError && (
               <div
                 role="alert"
@@ -178,14 +176,12 @@ export default function MapaSigchos() {
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Columna izquierda: LISTA DE CARDS – mantengo tu layout */}
+              {/* Columna izquierda: LISTA DE CARDS */}
               <div className="lg:col-span-5 space-y-4">
                 {loading ? (
                   <div className="text-white/60">Cargando sitios...</div>
                 ) : sitios.length === 0 ? (
-                  <div className="text-white/60">
-                    No hay sitios naturales disponibles. {/* TODO: revisar filtro de categoría */}
-                  </div>
+                  <div className="text-white/60">No hay sitios naturales disponibles.</div>
                 ) : (
                   sitios.map((s) => (
                     <SitioCard
@@ -200,9 +196,12 @@ export default function MapaSigchos() {
                 )}
               </div>
 
-              {/* Columna derecha: MAPA – usa el contenedor de tu diseño */}
+              {/* Columna derecha: MAPA */}
               <div className="lg:col-span-7">
-                <div className="h-[520px] w-full rounded-xl overflow-hidden bg-black/20">
+                <div
+                  className="h-[520px] w-full rounded-xl overflow-hidden bg-black/20 outline-none"
+                  tabIndex={-1} // permite focus por accesibilidad si se desea
+                >
                   <MapView
                     sitios={sitios}
                     selectedRoute={
@@ -211,10 +210,10 @@ export default function MapaSigchos() {
                           geojson: selectedRoute.geojson as unknown as GeoJSON.FeatureCollection,
                           user: selectedRoute.user,
                           destino: selectedRoute.destino,
+                          destinoNombre: selectedRoute.destinoNombre,
                         }
                         : null
                     }
-                    onMarkerClick={handleMarkerClick}
                   />
                 </div>
               </div>
