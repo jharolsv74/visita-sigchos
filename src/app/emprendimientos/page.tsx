@@ -92,12 +92,12 @@ export default function EmprendimientosPage() {
     let mounted = true;
     (async () => {
       try {
-  const ps = await getParroquias();
-  if (!mounted) return;
-  setParroquias(ps);
-  const cats = await getItemCatalogos();
-  if (!mounted) return;
-  setCategorias(cats);
+        const ps = await getParroquias();
+        if (!mounted) return;
+        setParroquias(ps);
+        const cats = await getItemCatalogos();
+        if (!mounted) return;
+        setCategorias(cats);
       } catch (err) {
         console.error('Failed to load parroquias', err);
       }
@@ -142,10 +142,10 @@ export default function EmprendimientosPage() {
           <div className="max-w-[600px]">
             <h1 className="text-6xl font-black text-white mb-6">Emmprendimientos</h1>
             <p className="text-7md text-gray-300 mb-2">
-                Descubre los emprendimientos de Sigchos: productores locales, artesanos y servicios que reflejan la tradición y el talento de la comunidad. Aquí encontrarás desde alimentos típicos hasta experiencias turísticas únicas.
+              Descubre los emprendimientos de Sigchos: productores locales, artesanos y servicios que reflejan la tradición y el talento de la comunidad. Aquí encontrarás desde alimentos típicos hasta experiencias turísticas únicas.
             </p>
             <p className="text-7md text-gray-300 mb-8">
-                Revisa la lista y apoya el comercio local — cada emprendimiento tiene una historia que contar. Explora la página para ver galerías, horarios y contactos, y anímate a visitar o contactar a quienes hacen posible Sigchos.
+              Revisa la lista y apoya el comercio local — cada emprendimiento tiene una historia que contar. Explora la página para ver galerías, horarios y contactos, y anímate a visitar o contactar a quienes hacen posible Sigchos.
             </p>
             <button
               type="button"
@@ -185,10 +185,10 @@ export default function EmprendimientosPage() {
         </div>
       </section>
 
-      <section id="emprendimientos-list" style={{ maxWidth: 1100, margin: '24px auto', display: 'grid', gridTemplateColumns: '360px 1fr', gap: 20, boxSizing: 'border-box', overflowX: 'hidden' }}>
+      <section id="emprendimientos-list" style={{ maxWidth: 1100, color: '#000', margin: '24px auto', display: 'grid', gridTemplateColumns: '360px 1fr', gap: 20, boxSizing: 'border-box', overflowX: 'hidden' }}>
 
         <div className="mx-auto max-w-3xl text-center" style={{ gridColumn: '1 / -1', marginBottom: 6 }}>
-          <h2 className="text-4xl md:text-5xl font-black text-white mb-4" style={{ margin:0 }}>
+          <h2 className="text-4xl md:text-5xl font-black text-white mb-4" style={{ margin: 0 }}>
             Emprendimientos en {' '}
             <span className="bg-gradient-to-r from-blue-300 via-blue-500 to-pink-600 bg-clip-text text-transparent">
               SIGCHOS
@@ -196,91 +196,91 @@ export default function EmprendimientosPage() {
           </h2>
         </div>
 
-        <div style={{ background:'#fff', padding:12, borderRadius:10, boxShadow:'0 8px 24px rgba(2,6,23,0.06)', height: '70vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxSizing: 'border-box' }}>
-        <h1 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>
+        <div style={{ background: '#fff', padding: 12, borderRadius: 10, boxShadow: '0 8px 24px rgba(2,6,23,0.06)', height: '70vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxSizing: 'border-box' }}>
+          <h1 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>
             Gestión de Emprendimientos
-        </h1>
-          <div style={{ display:'flex', gap:8, marginBottom:10, alignItems: 'center', flexWrap: 'wrap' }}>
+          </h1>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <input
               placeholder="Buscar por nombre o descripción..."
               value={query}
               onChange={(e) => { setQuery(e.target.value); setPageStart(0); }}
-              style={{ flex: '1 1 220px', minWidth:0, padding:8, borderRadius:8, border:'1px solid #e6e6e6', boxSizing: 'border-box' }}
+              style={{ flex: '1 1 220px', minWidth: 0, padding: 8, borderRadius: 8, border: '1px solid #e6e6e6', boxSizing: 'border-box' }}
             />
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
-        <div style={{ position: 'relative', flex: '0 0 140px', minWidth: 120 }}>
-                    <select
-                        aria-label="Filtrar por categoría"
-                        value={filterCategoriaId ?? ''}
-                        onChange={(e) => { setFilterCategoriaId(e.target.value ? Number(e.target.value) : null); setPageStart(0); }}
-            style={{
-                            appearance: 'none',
-                            WebkitAppearance: 'none',
-                            MozAppearance: 'none',
-              width: '100%',
-              padding: '8px 36px 8px 12px',
-                            borderRadius: 10,
-                            border: '1px solid #e6e6e6',
-                            background: '#fff',
-                            boxShadow: '0 4px 12px rgba(2,6,23,0.04)',
-                            cursor: 'pointer',
-                            fontSize: 14,
-              color: '#111827',
-              boxSizing: 'border-box'
-                        }}
-                    >
-                        <option value="">Categorías</option>
-                        {categorias.map(c => (
-                            <option key={c.Id} value={c.Id}>{c.Nombre}</option>
-                        ))}
-                    </select>
-                    <svg
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        stroke="currentColor"
-                        aria-hidden
-                        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', width: 16, height: 16, color: '#6b7280' }}
-                    >
-                        <path strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" d="M6 8l4 4 4-4" />
-                    </svg>
-                </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
+              <div style={{ position: 'relative', flex: '0 0 140px', minWidth: 120 }}>
+                <select
+                  aria-label="Filtrar por categoría"
+                  value={filterCategoriaId ?? ''}
+                  onChange={(e) => { setFilterCategoriaId(e.target.value ? Number(e.target.value) : null); setPageStart(0); }}
+                  style={{
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    MozAppearance: 'none',
+                    width: '100%',
+                    padding: '8px 36px 8px 12px',
+                    borderRadius: 10,
+                    border: '1px solid #e6e6e6',
+                    background: '#fff',
+                    boxShadow: '0 4px 12px rgba(2,6,23,0.04)',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    color: '#111827',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value="">Categorías</option>
+                  {categorias.map(c => (
+                    <option key={c.Id} value={c.Id}>{c.Nombre}</option>
+                  ))}
+                </select>
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  aria-hidden
+                  style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', width: 16, height: 16, color: '#6b7280' }}
+                >
+                  <path strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" d="M6 8l4 4 4-4" />
+                </svg>
+              </div>
 
-                <div style={{ position: 'relative', flex: '1 1 220px', minWidth: 140 }}>
-                    <select
-                        aria-label="Filtrar por parroquia"
-                        value={filterParroquiaId ?? ''}
-                        onChange={(e) => { setFilterParroquiaId(e.target.value ? Number(e.target.value) : null); setPageStart(0); }}
-            style={{
-                            appearance: 'none',
-                            WebkitAppearance: 'none',
-                            MozAppearance: 'none',
-                            width: '100%',
-              padding: '8px 36px 8px 12px',
-                            borderRadius: 10,
-                            border: '1px solid #e6e6e6',
-                            background: '#fff',
-                            boxShadow: '0 4px 12px rgba(2,6,23,0.04)',
-                            cursor: 'pointer',
-                            fontSize: 14,
-              color: '#111827',
-              boxSizing: 'border-box'
-                        }}
-                    >
-                        <option value="">Parroquia</option>
-                        {parroquias.map(p => (
-                            <option key={p.Id} value={p.Id}>{p.Nombre}</option>
-                        ))}
-                    </select>
-                    <svg
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        stroke="currentColor"
-                        aria-hidden
-                        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', width: 16, height: 16, color: '#6b7280' }}
-                    >
-                        <path strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" d="M6 8l4 4 4-4" />
-                    </svg>
-                </div>
+              <div style={{ position: 'relative', flex: '1 1 220px', minWidth: 140 }}>
+                <select
+                  aria-label="Filtrar por parroquia"
+                  value={filterParroquiaId ?? ''}
+                  onChange={(e) => { setFilterParroquiaId(e.target.value ? Number(e.target.value) : null); setPageStart(0); }}
+                  style={{
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    MozAppearance: 'none',
+                    width: '100%',
+                    padding: '8px 36px 8px 12px',
+                    borderRadius: 10,
+                    border: '1px solid #e6e6e6',
+                    background: '#fff',
+                    boxShadow: '0 4px 12px rgba(2,6,23,0.04)',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    color: '#111827',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value="">Parroquia</option>
+                  {parroquias.map(p => (
+                    <option key={p.Id} value={p.Id}>{p.Nombre}</option>
+                  ))}
+                </select>
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  aria-hidden
+                  style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', width: 16, height: 16, color: '#6b7280' }}
+                >
+                  <path strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" d="M6 8l4 4 4-4" />
+                </svg>
+              </div>
             </div>
           </div>
           {loading && <div>Cargando...</div>}
@@ -293,27 +293,27 @@ export default function EmprendimientosPage() {
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') selectItem(it); }}
-                style={{ padding:10, marginBottom:8, background: selected?.Id === it.Id ? '#f0f7ff' : 'transparent', borderRadius:8, cursor: 'pointer', boxSizing: 'border-box' }}
+                style={{ padding: 10, marginBottom: 8, background: selected?.Id === it.Id ? '#f0f7ff' : 'transparent', borderRadius: 8, cursor: 'pointer', boxSizing: 'border-box' }}
               >
-                <div style={{ display:'flex', gap:12, alignItems:'center' }}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                   {/* Avatar / thumbnail */}
-                  <div style={{ width:56, height:56, borderRadius:8, background:'#eef2ff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, color:'#3730a3', flexShrink:0 }} aria-hidden>
+                  <div style={{ width: 56, height: 56, borderRadius: 8, background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#3730a3', flexShrink: 0 }} aria-hidden>
                     {String((it.Nombre || '').charAt(0)).toUpperCase() || '?'}
                   </div>
 
                   {/* Content */}
-                  <div style={{ minWidth:0, flex: '1 1 auto' }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
-                      <strong style={{ fontSize:16, lineHeight:1.1 }}>{it.Nombre}</strong>
-                      <div style={{ fontSize:12, color:'#888' }}>{it.Parroquia?.Nombre ?? ''}</div>
+                  <div style={{ minWidth: 0, flex: '1 1 auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                      <strong style={{ fontSize: 16, lineHeight: 1.1 }}>{it.Nombre}</strong>
+                      <div style={{ fontSize: 12, color: '#888' }}>{it.Parroquia?.Nombre ?? ''}</div>
                     </div>
 
-                    <div style={{ fontSize:13, color:'#666', marginTop:6, overflow:'hidden', textOverflow:'ellipsis', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>
+                    <div style={{ fontSize: 13, color: '#666', marginTop: 6, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                       {it.Descripcion ?? ''}
                     </div>
 
-                    <div style={{ marginTop:8, display:'flex', gap:8, alignItems:'center' }}>
-                      <span style={{ background:'#eef2ff', color:'#3730a3', padding:'4px 8px', borderRadius:999, fontSize:12 }}>
+                    <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <span style={{ background: '#eef2ff', color: '#3730a3', padding: '4px 8px', borderRadius: 999, fontSize: 12 }}>
                         {it.ItemCatalogo?.Nombre ?? (categorias.find(c => c.Id === it.IdCategoria)?.Nombre) ?? 'Sin categoría'}
                       </span>
                     </div>
@@ -322,33 +322,33 @@ export default function EmprendimientosPage() {
               </div>
             ))}
           </div>
-          <div style={{ display:'flex', justifyContent:'space-between', marginTop:10, marginBottom:4 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, marginBottom: 4 }}>
             <button onClick={() => setPageStart(Math.max(0, pageStart - pageSize))} disabled={pageStart === 0}>Anterior</button>
             <button onClick={() => setPageStart(pageStart + pageSize)} disabled={items.length < pageSize}>Siguiente</button>
           </div>
         </div>
 
-        <div style={{ background:'#fff', padding:18, borderRadius:10, boxShadow:'0 8px 24px rgba(2,6,23,0.06)', minHeight: '60vh' }}>
+        <div style={{ background: '#fff', padding: 18, borderRadius: 10, boxShadow: '0 8px 24px rgba(2,6,23,0.06)', minHeight: '60vh' }}>
           {!selected ? (
             <div>Seleccione un emprendimiento para ver detalles.</div>
           ) : (
             <div>
               <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>{selected.Nombre}</h2>
-              <div style={{ display:'flex', gap:12, marginTop:8 }}>
-                <div style={{ flex:1 }}>
+              <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                <div style={{ flex: 1 }}>
                   <label>Horario</label>
-                  <div style={{ padding:12, background:'#fafafa', borderRadius:8 }}>{selected.Horario ?? 'No disponible'}</div>
+                  <div style={{ padding: 12, background: '#fafafa', borderRadius: 8 }}>{selected.Horario ?? 'No disponible'}</div>
                 </div>
               </div>
 
-              <section style={{ marginTop:16 }}>
+              <section style={{ marginTop: 16 }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Descripción</h3>
                 <p>{selected.Descripcion}</p>
               </section>
 
-              <section style={{ marginTop:16 }}>
+              <section style={{ marginTop: 16 }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Galería</h3>
-                <div style={{ marginTop:8 }}>
+                <div style={{ marginTop: 8 }}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                     {selectedFotos.length > 0 ? (
                       selectedFotos.map((u, i) => (
@@ -441,7 +441,7 @@ export default function EmprendimientosPage() {
                       )}
                     </div>
                   </div>
-                
+
                 </div>
               </section>
             </div>

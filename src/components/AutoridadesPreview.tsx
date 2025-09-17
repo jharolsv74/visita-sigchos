@@ -49,6 +49,7 @@ export default function AutoridadesPreview() {
           }
 
           const nombre = getText(a as Autoridad, 'Nombre', 'nombre') ?? '—';
+          const apellido = getText(a as Autoridad, 'Apellido', 'apellido') ?? '';
           const cargo = getText(a as Autoridad, 'Cargo', 'cargo') ?? '';
           const imagen = getText(a as Autoridad, 'ImagenUrl', 'imagenUrl', 'imagen') ?? '/icon-site-sigchos.png';
           const descripcion = getText(a as Autoridad, 'Descripcion', 'descripcion') ?? '';
@@ -57,7 +58,7 @@ export default function AutoridadesPreview() {
             <div className="autoridad-card" key={(a as any).Id ?? i}>
               <img className="autoridad-img" src={imagen} alt={nombre} />
               <div className="autoridad-info">
-                <div className="autoridad-nombre">{nombre}</div>
+                <div className="autoridad-nombre">{nombre} {apellido}</div>
                 <div className="autoridad-cargo">{cargo}</div>
                 {descripcion && <div className="autoridad-desc">{descripcion}</div>}
               </div>
