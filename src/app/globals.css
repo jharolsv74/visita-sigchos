@@ -27,6 +27,9 @@
   border-radius: 0;
   margin: 0;
   padding: 0 3vw;
+  /* allow wrapping on narrow screens so items don't overflow */
+  flex-wrap: wrap;
+  box-sizing: border-box;
 }
 .contacto-gradient-icon {
   display: flex;
@@ -41,6 +44,9 @@
   margin-left: 1.2rem;
   margin-right: 2.5rem;
   letter-spacing: 0.01em;
+  /* make text use available space and allow wrapping */
+  flex: 1 1 auto;
+  min-width: 180px;
 }
 .contacto-gradient-btn {
   border: 2px solid #fff;
@@ -58,6 +64,62 @@
 .contacto-gradient-btn:hover {
   background: #fff;
   color: #ff5e62;
+}
+
+/* Responsive adjustments for the contact gradient bar */
+@media (max-width: 900px) {
+  .contacto-gradient-bar {
+    min-height: 110px;
+    gap: 1rem;
+    padding: 1rem 4vw;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .contacto-gradient-icon {
+    flex: 0 0 auto;
+    margin-bottom: 0.2rem;
+  }
+
+  .contacto-gradient-text {
+    font-size: 1.25rem;
+    margin-left: 0.6rem;
+    margin-right: 0.6rem;
+    text-align: center;
+    min-width: 0;
+  }
+
+  .contacto-gradient-btn {
+    margin-left: 0;
+    flex: 0 0 auto;
+    padding: 0.55rem 1.25rem;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .contacto-gradient-bar {
+    min-height: 100px;
+    padding: 0.8rem 3vw;
+    gap: 0.6rem;
+  }
+
+  .contacto-gradient-icon svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .contacto-gradient-text {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    padding: 0 0.25rem;
+  }
+
+  .contacto-gradient-btn {
+    padding: 0.45rem 0.9rem;
+    font-size: 0.9rem;
+  }
 }
 
 /* Sección Galería */
@@ -151,6 +213,56 @@
   gap: 1rem;
 }
 
+/* Responsive gallery: switch to column layout at narrow widths and make grid auto-fit */
+@media (max-width: 900px) {
+  .galeria-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 0 4vw;
+  }
+
+  .galeria-text {
+    width: 100%;
+    max-width: 720px;
+    text-align: center;
+    order: 0;
+  }
+
+  .galeria-content {
+    width: 100%;
+    order: 1;
+    align-items: center;
+  }
+
+  .galeria-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    width: 100%;
+  }
+
+  /* Make gallery button centered and full-width on small screens */
+  .galeria-btn {
+    width: 100%;
+    max-width: 420px;
+    display: inline-flex;
+    justify-content: center;
+    padding: 0.9rem 1.2rem;
+  }
+
+  .redes-sociales-grid {
+    grid-template-columns: 1fr;
+    width: 100%;
+    max-width: 720px;
+  }
+}
+
+@media (max-width: 480px) {
+  .galeria-title { font-size: 2.2rem; }
+  .galeria-desc { font-size: 1rem; }
+  .galeria-grid { gap: 0.6rem; }
+  .galeria-item { border-radius: 8px; }
+}
+
 .red-social-card {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 1rem;
@@ -204,6 +316,7 @@
   position: relative;
   overflow: hidden;
   min-height: 600px;
+  z-index: 1; /* keep below the navbar */
 }
 
 .zapallin-container {
@@ -212,7 +325,7 @@
   margin: 0 auto;
   padding: 0 3vw;
   position: relative;
-  z-index: 2;
+  z-index: 1; /* lower stacking so it won't float above fixed navbar */
   display: flex;
   justify-content: center;
 }
@@ -306,6 +419,49 @@
   margin-left: -15%;
 }
 
+/* Stack Zapallín text above image on small screens */
+@media (max-width: 900px) {
+  .zapallin-content {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .zapallin-text-bubble {
+    width: 100%;
+    padding: 1.5rem;
+    box-sizing: border-box;
+    order: 0;
+  }
+
+  .zapallin-character {
+    flex: 0 0 auto;
+    width: 80%;
+    max-width: 420px;
+    right: 0;
+    order: 1;
+    margin-top: 0.5rem;
+  }
+
+  .zapallin-img {
+    width: 100%;
+    max-height: 420px;
+    margin-left: 0;
+    transform: none;
+    filter: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .zapallin-text-bubble {
+    padding: 1rem;
+  }
+
+  .zapallin-img {
+    max-height: 300px;
+  }
+}
+
 @keyframes zapallinFloat {
   0%, 100% {
     transform: translateY(0);
@@ -345,6 +501,7 @@
   overflow: hidden;
   position: relative;
   padding: 2rem 0;
+  margin-top: 2rem;
 }
 
 .atractivos-slider-container {
@@ -451,6 +608,131 @@
   opacity: 0.9;
   color: #fff;
 }
+
+/* Responsive adjustments for atractivos slider: show fewer cards and keep readable text */
+@media (max-width: 900px) {
+  .atractivo-slide {
+    /* show ~2 cards in view, keep cards legible */
+    flex: 0 0 45%;
+    min-width: 260px;
+    transform: scale(0.98);
+  }
+
+  .atractivo-slide-title {
+    font-size: 1.4rem;
+  }
+
+  .atractivo-slide-subtitle {
+    font-size: 0.95rem;
+  }
+}
+
+/* Make atractivos section stack on narrower viewports for better scaling */
+@media (max-width: 1100px) {
+  .atractivos-content {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    padding: 0 4vw;
+  }
+
+  .atractivos-title-group {
+    width: 100%;
+    text-align: center;
+    order: 0;
+  }
+
+  /* Ensure desc and button stack and are centered */
+  .atractivos-desc-btn {
+    width: 100%;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 1rem !important;
+    order: 1;
+    box-sizing: border-box;
+    padding: 0 1rem;
+  }
+
+  .atractivos-desc {
+    max-width: 100%;
+    text-align: center;
+    margin: 0;
+  }
+
+  .atractivos-btn {
+    align-self: center;
+    margin: 0 auto;
+    display: inline-block;
+  }
+
+  .atractivos-slider {
+    width: 100%;
+    padding: 0;
+    order: 2;
+  }
+
+  .atractivos-slider-container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    gap: 1rem;
+  }
+
+  .atractivo-slide {
+    flex: 0 0 72%;
+    min-width: 220px;
+  }
+}
+
+/* Additional safety: if viewport is still causing row layout, force order inside desc-btn */
+@media (max-width: 1100px) {
+  .atractivos-title-group { order: 0; width: 100%; }
+  .atractivos-desc-btn > .atractivos-desc { order: 1; }
+  .atractivos-desc-btn > .atractivos-btn { order: 2; }
+}
+
+/* Ensure strict vertical order on small screens: title -> paragraph -> button */
+@media (max-width: 900px) {
+  .atractivos-title-group { order: 0; }
+
+  /* inside the desc-btn container, make paragraph first and button second */
+  .atractivos-desc-btn { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+  .atractivos-desc-btn > .atractivos-desc { order: 1; width: 100%; }
+  .atractivos-desc-btn > .atractivos-btn { order: 2; margin-top: 0; width: auto; }
+
+  /* make button visually prominent but constrained */
+  .atractivos-btn {
+    padding: 0.75rem 1.6rem;
+    font-size: 1rem;
+    border-radius: 1.5rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .atractivo-slide {
+    /* show 1 card mostly in view to avoid tiny cards */
+    flex: 0 0 82%;
+    min-width: 220px;
+    transform: scale(1);
+    box-shadow: 0 8px 36px rgba(0,0,0,0.35);
+  }
+
+  .atractivo-slide-title {
+    font-size: 1.25rem;
+  }
+
+  .atractivo-slide-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .atractivos-slider-container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    gap: 1rem;
+  }
+}
 .atractivos-title-group {
   flex: 1.2;
   display: flex;
@@ -471,7 +753,7 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-fill-color: transparent;
+  color: transparent;
 }
 .atractivos-title-bold {
   font-style: italic;
@@ -513,7 +795,7 @@
 /* Sección Autoridades */
 .autoridades-section {
   width: 100%;
-  max-width: 1400px;
+  max-width: 100%;
   margin: 0 auto;
   margin-top: 4rem;
   margin-bottom: 4rem;
@@ -535,7 +817,7 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-fill-color: transparent;
+  color: transparent;
 }
 .autoridades-subtitle {
   color: #e6e6e6;
@@ -651,6 +933,7 @@
 }
 .sigchos-video-container {
   position: relative;
+  z-index: 1; /* keep whole video block under navbar */
   width: 90vw;
   max-width: 1200px;
   aspect-ratio: 16/9;
@@ -833,10 +1116,78 @@
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 10;
+  z-index: 2; /* lowered so navbar (very high z-index) stays above */
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Responsive Footer: stack content on small screens and hide large decorative texts */
+@media (max-width: 768px) {
+  .final-container {
+    padding: 0 2rem;
+  }
+
+  .final-content {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "logo"
+      "nav"
+      "legal"
+      "copyright";
+    gap: 1rem;
+    text-align: left;
+  }
+
+  .final-logo {
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .final-logo-img {
+    height: 1.6rem !important;
+  }
+
+  .final-nav {
+    justify-content: flex-start;
+    gap: 1rem;
+    font-size: 0.95rem;
+    flex-wrap: wrap;
+  }
+
+  .final-legal {
+    flex-direction: column;
+    gap: 0.4rem;
+    align-items: flex-start;
+    color: #999;
+    font-size: 0.85rem;
+  }
+
+  .final-copyright {
+    text-align: left;
+    font-size: 0.85rem;
+    color: #999;
+  }
+
+  /* Hide the oversized decorative repeated texts on small screens to avoid overflow */
+  .final-texts {
+    display: none;
+  }
+}
+
+/* Medium screens: reduce decorative text size and translation to keep them subtle */
+@media (min-width: 769px) and (max-width: 1100px) {
+  .final-container {
+    padding: 0 3rem;
+  }
+
+  .final-text {
+    font-size: 3.5vw;
+    opacity: 0.04;
+  }
 }
 .sigchos-video-play {
   background: none;
@@ -921,10 +1272,10 @@
   align-items: center;
 }
 .sigchos-info-img {
-  width: 500px;
-  max-width: 40vw;
-  height: 100%;
-  border-radius: 0;
+  width: 100%; /* increased to allow larger display on wide screens */
+  max-width: 50vw;
+  height: auto;
+  border-radius: 6px;
   object-fit: cover;
   box-shadow: none;
   display: block;
@@ -958,21 +1309,99 @@
   text-align: justify;
   letter-spacing: 0.01em;
 }
+
+/* Responsive layout for sigchos info section */
+@media (max-width: 900px) {
+  .sigchos-info-content {
+    flex-direction: column !important;
+    gap: 2rem;
+  }
+  
+  .sigchos-info-img {
+    width: 100% !important;
+    max-width: 100% !important; /* Full width on mobile */
+    order: 0; /* Image first */
+  }
+  
+  .sigchos-info-textbox {
+    width: 100%;
+    order: 1; /* Text below image */
+  }
+}
 /* Carousel Section Styles */
 
 .carousel-section {
-  width: 100%;
+  /* full-bleed carousel: let this section stretch edge-to-edge */
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  width: 100vw;
   min-height: 480px;
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start; /* Changed from center to flex-start */
   justify-content: center;
-  padding: 0 4vw;
-  margin-top: -120px;
-  position: relative;
-  z-index: 5;
-  overflow: hidden;
+  padding: 0; /* gutters are inside carousel-cards */
+  /* reduced overlap so navbar stays visible; keep slight overlap for visual effect */
+  margin-top: -40px;
+  z-index: 1; /* ensure carousel stays below the navbar */
+  overflow: visible; /* Allow content to expand vertically */
 }
+
+.carousel-scroll {
+  /* Infinite scroll carousel with 3 copies */
+  display: flex;
+  overflow-x: auto;
+  overflow-y: visible; /* Allow vertical overflow for expanded cards */
+  scroll-behavior: smooth;
+  width: 100%;
+  gap: 1.5rem;
+  padding: 2rem 1.5rem;
+  /* Hide scrollbars */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  /* Ensure cards don't shrink */
+  align-items: flex-start; /* Align cards to top when heights vary */
+  scroll-snap-type: x mandatory;
+}
+
+.carousel-scroll::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.carousel-scroll .carousel-card {
+  flex-shrink: 0;
+  scroll-snap-align: center;
+}
+
+/* Responsive adjustments for carousel cards */
+@media (max-width: 768px) {
+  .carousel-card {
+    width: 320px;
+    min-width: 320px;
+    min-height: 380px; /* Minimum height but can grow */
+    max-height: none; /* Allow cards to grow as needed */
+  }
+  
+  .carousel-card-center {
+    width: 340px;
+    min-height: 400px; /* Changed from fixed height to min-height */
+    max-height: none;
+  }
+  
+  .carousel-scroll {
+    gap: 1rem;
+    padding: 1.5rem 1rem;
+    align-items: flex-start; /* Align cards to top when heights vary */
+  }
+  
+  .carousel-card-image {
+    height: 160px;
+  }
+}
+
 .carousel-nav {
   display: flex;
   flex-direction: column;
@@ -991,8 +1420,8 @@
 .carousel-cards {
   display: flex;
   gap: 2vw;
-  width: auto;
-  max-width: 1200px;
+  width: 100%;
+  max-width: none;
   overflow: visible;
   transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
@@ -1002,24 +1431,32 @@
 }
 .carousel-card {
   position: relative;
-  width: 320px;
-  min-height: 320px;
+  width: 380px;
+  min-width: 380px;
+  min-height: 400px; /* Minimum height but can grow */
+  max-height: none; /* Allow cards to grow as needed */
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 8px 32px 0 rgba(0,0,0,0.18);
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: flex-start; /* Changed from flex-end to flex-start */
   background: transparent;
   flex-shrink: 0;
-  transform: scale(0.9);
+  transform: scale(0.95);
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  opacity: 0.7;
+  opacity: 0.8;
+}
+
+.carousel-card:hover {
+  transform: scale(1);
+  opacity: 1;
 }
 
 .carousel-card-center {
-  width: 380px;
-  min-height: 380px;
+  width: 420px;
+  height: 440px;
+  min-height: 440px;
   transform: scale(1);
   opacity: 1;
   z-index: 1;
@@ -1043,7 +1480,7 @@
 
 .carousel-card-image {
   width: 100%;
-  height: 160px;
+  height: 180px;
   overflow: hidden;
   border-radius: 12px;
   margin-bottom: 1.5rem;
@@ -1131,7 +1568,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 20;
+  z-index: 2147483647; /* ensure navbar sits above all page content */
   background: #00000026;
   transition: background 0.4s cubic-bezier(.4,0,.2,1), box-shadow 0.4s cubic-bezier(.4,0,.2,1), padding 0.3s;
   box-shadow: none;
@@ -1148,6 +1585,10 @@
   color: #fff;
   font-family: 'Montserrat', sans-serif;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0; /* don't let logo shrink below its content */
 }
 .navbar-logo-bold {
   font-style: italic;
@@ -1157,13 +1598,35 @@
   list-style: none;
   display: flex;
   gap: 2rem;
+  align-items: center;
+  flex-wrap: nowrap;
 }
 .navbar-links li a {
   color: #fff;
   text-decoration: none;
-  font-size: 1.1rem;
+  font-size: clamp(0.9rem, 1.5vw, 1.1rem); /* Responsive font size */
   font-weight: 500;
   transition: color 0.2s;
+  white-space: nowrap; /* prevent wrap that could cause overlap */
+}
+
+/* Progressive menu hiding on smaller screens - ONLY for desktop navbar */
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .navbar-links li:nth-child(4) { /* EMPRENDIMIENTOS */
+    display: none;
+  }
+}
+
+@media (max-width: 1200px) and (min-width: 1101px) {
+  .navbar-links li:nth-child(5) { /* AUTORIDADES */
+    display: none;
+  }
+}
+
+@media (max-width: 1150px) and (min-width: 1101px) {
+  .navbar-links li:nth-child(3) { /* MAPA */
+    display: none;
+  }
 }
 .navbar-links li a:hover {
   color: #ffd700;
@@ -1199,6 +1662,107 @@
   text-shadow: 2px 2px 12px #000;
   margin-left: 0.5rem;
 }
+
+/* Main hero background control: dedicated element to manage scaling across devices */
+.main-hero {
+  position: relative;
+  width: 100%;
+  min-height: 100vh; /* tall hero by default */
+  overflow: hidden;
+  display: block;
+  z-index: 2; /* place hero above body overlay */
+}
+
+.main-hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 1; /* behind hero content but above the global overlay */
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  transition: background-position 0.3s ease, transform 0.3s ease;
+}
+
+/* On large screens, keep background fixed for a subtle parallax; ensure hero is tall */
+@media (min-width: 1101px) {
+  .main-hero {
+    min-height: 100vh;
+  }
+  .main-hero-bg {
+    background-attachment: fixed;
+    background-position: center 30%;
+  }
+}
+
+/* Medium screens: center a bit higher to preserve focal area */
+@media (max-width: 1100px) and (min-width: 769px) {
+  .main-hero {
+    min-height: 85vh;
+  }
+  .main-hero-bg {
+    background-position: center 25%;
+    background-size: cover;
+    background-attachment: scroll;
+  }
+}
+
+/* Small screens: show complete image, adjust height accordingly */
+@media (max-width: 768px) {
+  .main-hero {
+    min-height: 50vh; /* Reduced height to minimize margins */
+    max-height: 55vh; /* Reduced maximum height */
+    display: flex;
+    align-items: center; /* Center content to reduce top/bottom spacing */
+    justify-content: center;
+    margin: 0; /* Remove any margins */
+    padding: 0; /* Remove any padding */
+  }
+  .main-hero-bg {
+    background-position: center center;
+    background-size: contain; /* Show complete image without cropping */
+    background-repeat: no-repeat;
+    background-attachment: scroll;
+    background-color: transparent; /* Remove black background */
+    margin: 0; /* Remove any margins */
+    padding: 0; /* Remove any padding */
+  }
+  /* Ensure navbar sits above hero content */
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+  }
+}
+
+/* Keep background image visible on mobile devices */
+@media (max-width: 768px) {
+  .main-hero-bg {
+    /* Keep background image visible in mobile */
+    background-position: center 15%;
+    background-size: cover;
+    background-attachment: scroll;
+  }
+}
+
+/* Very small phones: maintain image proportions */
+@media (max-width: 420px) {
+  .main-hero {
+    min-height: 30vh; /* Further reduced for very small screens */
+    max-height: 50vh; /* Reduced maximum height */
+    margin: 0; /* Remove any margins */
+    padding: 0; /* Remove any padding */
+  }
+  .main-hero-bg {
+    background-position: center center;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-color: transparent; /* No black background */
+    margin: 0; /* Remove any margins */
+    padding: 0; /* Remove any padding */
+  }
+}
 @import "tailwindcss";
 
 :root {
@@ -1206,11 +1770,12 @@
   --foreground: #171717;
 }
 
-@theme inline {
+/* Consolidated theme vars (removed unsupported @theme at-rule) */
+:root {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', monospace;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1247,4 +1812,132 @@ body::after {
   z-index: -1;
   background: #12141df0;
   width: 100%;
+}
+
+/* Responsive navbar: hamburger and mobile menu */
+.navbar-toggle {
+  display: none; /* shown only on small screens */
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-left: 1rem;
+  color: white;
+}
+.navbar-toggle:focus {
+  outline: 2px solid #ffd70033;
+  outline-offset: 2px;
+}
+.hamburger {
+  width: 1.6rem;
+  height: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.hamburger span {
+  display: block;
+  height: 2px;
+  background: white;
+  border-radius: 2px;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+.hamburger.open span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.hamburger.open span:nth-child(2) {
+  opacity: 0;
+}
+.hamburger.open span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* Mobile layout: keep logo and image visible, hide links behind hamburger */
+@media (max-width: 1100px) {
+  /* show hamburger earlier (covers large tablets / small laptops) */
+  .navbar {
+    padding: 0.8rem 1rem;
+    position: fixed; /* keep navbar fixed on top for mobile as well */
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 2147483647; /* keep navbar above page content */
+  }
+  /* Reduce page content padding to minimize top margin */
+  :root {
+    --navbar-height: 50px; /* reduced navbar height estimation */
+  }
+  body {
+    padding-top: var(--navbar-height);
+  }
+  .navbar-logo {
+    font-size: 1.25rem;
+    gap: 0.4rem;
+  }
+  .navbar-logo-img {
+    height: 1.6rem !important;
+  }
+  /* Make dropdown full-width under the nav to avoid overlapping the logo/image */
+  .navbar-links {
+    position: absolute;
+    top: 100%;
+    left: 0; /* align to left of navbar */
+    right: 0; /* stretch to right */
+    background: rgba(18,20,29,0.98);
+    width: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0.6rem 0.8rem;
+    border-radius: 0 0 8px 8px; /* rounded bottom only */
+    transform-origin: top center;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.3);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-8px) scale(0.98);
+    transition: opacity 0.18s ease, transform 0.18s ease, pointer-events 0.18s;
+    z-index: 39; /* ensure it's below navbar but above page content */
+  }
+  .navbar-links.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
+  .navbar-links li {
+    margin: 0.2rem 0;
+  }
+  .navbar-links li a {
+    display: block;
+    padding: 0.6rem 0.4rem;
+    color: #fff;
+    font-size: clamp(0.95rem, 2.5vw, 1.2rem); /* Responsive font size for mobile */
+  }
+  .navbar-toggle {
+    display: block;
+  }
+
+  /* Prevent carousel from being pulled under the fixed navbar on smaller screens
+     The desktop layout intentionally uses a negative top margin to overlap the hero;
+     on smaller screens this conflicts with the fixed navbar + body padding, so
+     reset the margin and lower stacking here. */
+  .carousel-section {
+    margin-top: 1rem; /* remove large negative offset on narrow viewports */
+    z-index: 1; /* ensure carousel sits below the navbar */
+  }
+}
+
+/* Ensure desktop keeps original behavior */
+@media (min-width: 1101px) {
+  .navbar-links {
+    position: static;
+    background: transparent;
+    width: auto;
+    flex-direction: row;
+    gap: 2rem;
+    padding: 0;
+    opacity: 1 !important;
+    pointer-events: auto;
+    transform: none !important;
+    box-shadow: none;
+  }
 }

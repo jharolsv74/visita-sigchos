@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import AutoridadesPreview from '../components/AutoridadesPreview';
@@ -12,6 +12,7 @@ import { getCantones } from '@/services/cantones.service';
 import { getHome } from '@/services/home.service';
 import type { Parroquia, Canton } from '@/types/db';
 import { useRouter } from 'next/navigation';
+import { initDevEnv } from '@/utils/dev';
 
 export default function Home() {
   const router = useRouter();
@@ -26,67 +27,69 @@ export default function Home() {
   const [canton, setCanton] = useState<Canton | null>(null);
   const [cantonLoaded, setCantonLoaded] = useState(false);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const sliderRef = useRef<HTMLDivElement | null>(null);
+  const carouselRef = useRef<HTMLDivElement | null>(null);
+  // Infinite carousel helpers
+  const isAdjustingRef = useRef(false);
+  const scrollEndTimer = useRef<number | null>(null);
   const DESC_THRESHOLD = 160; // characters before showing "Ver más"
 
-  // Build the carousel items from Sitios (preferred) or Parroquias as fallback
-  const itemsToUse = (sitios && sitios.length > 0)
-    ? sitios.map(({ sitio, ubicacion }) => ({
-      image: sitio.ImagenUrl || '/icon-site-sigchos.png',
-      title: sitio.Nombre || 'Sitio',
-      desc: sitio.Descripcion || '',
-      id: sitio.Id,
+  // Fetch parroquias for the top carousel (prefer parroquias, fall back to sitios)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const ps = await getParroquias();
+        if (!mounted) return;
+        setParroquias(ps);
+      } catch (err) {
+        console.error('Failed to fetch parroquias', err);
+        if (mounted) setParroquias([]);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  // Build the carousel items: prefer Parroquias for the top carousel, fall back to Sitios
+  const itemsToUse = (parroquias && parroquias.length > 0)
+    ? parroquias.map((p) => ({
+      image: p.ImagenUrl || '/icon-site-sigchos.png',
+      title: p.Nombre || 'Parroquia',
+      desc: p.Descripcion || '',
+      id: undefined,
     }))
-    : (parroquias && parroquias.length > 0)
-      ? parroquias.map((p) => ({
-        image: p.ImagenUrl || '/icon-site-sigchos.png',
-        title: p.Nombre || 'Parroquia',
-        desc: p.Descripcion || '',
-        id: undefined,
+    : (sitios && sitios.length > 0)
+      ? sitios.map(({ sitio, ubicacion }) => ({
+        image: sitio.ImagenUrl || '/icon-site-sigchos.png',
+        title: sitio.Nombre || 'Sitio',
+        desc: sitio.Descripcion || '',
+        id: sitio.Id,
       }))
       : [];
 
   const total = itemsToUse.length;
-
-  // Función para obtener los items visibles, con repetición infinita
   const getVisibleItems = () => {
     if (total === 0) return [];
     return Array.from({ length: visibleCards }, (_, i) => itemsToUse[(startIdx + i) % total]);
   };
 
-  // Animación y cambio de índice
   const handlePrev = () => {
-  if (animating) return;
-  if (total === 0) return;
+    if (animating || total === 0) return;
     setAnimating(true);
     setTimeout(() => {
       setStartIdx((prev) => (prev - 1 + total) % total);
       setAnimating(false);
     }, 350);
   };
+
   const handleNext = () => {
-  if (animating) return;
-  if (total === 0) return;
+    if (animating || total === 0) return;
     setAnimating(true);
     setTimeout(() => {
       setStartIdx((prev) => (prev + 1) % total);
       setAnimating(false);
     }, 350);
   };
-
-  // Fetch parroquias on mount (first 6 rows)
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const data = await getParroquias(0, 11); // fetch first 12 items as example
-        if (!mounted) return;
-        setParroquias(data);
-      } catch (err) {
-        console.error('Failed to fetch parroquias', err);
-      }
-    })();
-    return () => { mounted = false; };
-  }, []);
 
   // Fetch sitios to use in carousels
   useEffect(() => {
@@ -106,6 +109,125 @@ export default function Home() {
     })();
     return () => { mounted = false; };
   }, []);
+
+  // Infinite carousel: initial middle positioning, wrapping and snap-to-center on scroll end
+  useEffect(() => {
+    const el = sliderRef.current;
+    if (!el) return;
+    const slides = (sitios ?? []).length;
+    if (slides === 0) return;
+
+    // position at middle group's start
+    const groupWidth = el.scrollWidth / 3;
+    requestAnimationFrame(() => {
+      el.scrollLeft = groupWidth;
+    });
+
+    function onScroll() {
+      if (!el) return;
+      if (isAdjustingRef.current) return;
+      if (scrollEndTimer.current) window.clearTimeout(scrollEndTimer.current);
+      // debounce end of scroll
+      // @ts-ignore - window.setTimeout returns number
+      scrollEndTimer.current = window.setTimeout(() => {
+        const groupW = el.scrollWidth / 3;
+        const left = el.scrollLeft;
+        // wrap groups
+        if (left < groupW * 0.5) {
+          isAdjustingRef.current = true;
+          el.scrollLeft = left + groupW;
+          isAdjustingRef.current = false;
+          return;
+        }
+        if (left > groupW * 1.5) {
+          isAdjustingRef.current = true;
+          el.scrollLeft = left - groupW;
+          isAdjustingRef.current = false;
+          return;
+        }
+
+        // snap to nearest child center
+        const children = Array.from(el.children) as HTMLElement[];
+        const containerCenter = el.scrollLeft + el.clientWidth / 2;
+        let nearestIdx = -1;
+        let nearestDist = Infinity;
+        children.forEach((ch, i) => {
+          const chCenter = ch.offsetLeft + ch.clientWidth / 2;
+          const dist = Math.abs(chCenter - containerCenter);
+          if (dist < nearestDist) {
+            nearestDist = dist;
+            nearestIdx = i;
+          }
+        });
+        if (nearestIdx >= 0) {
+          const ch = children[nearestIdx];
+          const target = ch.offsetLeft + ch.clientWidth / 2 - el.clientWidth / 2;
+          isAdjustingRef.current = true;
+          el.scrollTo({ left: target, behavior: 'smooth' });
+          setTimeout(() => (isAdjustingRef.current = false), 300);
+        }
+      }, 120) as unknown as number;
+    }
+
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (scrollEndTimer.current) window.clearTimeout(scrollEndTimer.current);
+    };
+  }, [sitios]);
+
+  // Infinite carousel for the top carousel (parroquias / sitios) using carouselRef
+  useEffect(() => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const slides = (parroquias ?? []).length;
+    if (slides === 0) return;
+
+    // We render 3 copies of the items; position to the middle copy
+    const groupWidth = el.scrollWidth / 3;
+    requestAnimationFrame(() => {
+      el.scrollLeft = groupWidth;
+    });
+
+    let scrollEnd: number | null = null;
+    function onScroll() {
+      if (!el) return;
+      if (scrollEnd) window.clearTimeout(scrollEnd);
+      scrollEnd = window.setTimeout(() => {
+        const left = el.scrollLeft;
+        const gw = groupWidth;
+        if (left < gw * 0.5) {
+          el.scrollLeft = left + gw;
+          return;
+        }
+        if (left > gw * 1.5) {
+          el.scrollLeft = left - gw;
+          return;
+        }
+        // optional: snap to nearest child center
+        const children = Array.from(el.children) as HTMLElement[];
+        const containerCenter = el.scrollLeft + el.clientWidth / 2;
+        let nearestIdx = -1;
+        let nearestDist = Infinity;
+        children.forEach((ch, i) => {
+          const chCenter = ch.offsetLeft + ch.clientWidth / 2;
+          const dist = Math.abs(chCenter - containerCenter);
+          if (dist < nearestDist) { nearestDist = dist; nearestIdx = i; }
+        });
+        if (nearestIdx >= 0) {
+          const ch = children[nearestIdx];
+          const target = ch.offsetLeft + ch.clientWidth / 2 - el.clientWidth / 2;
+          el.scrollTo({ left: target, behavior: 'smooth' });
+        }
+      }, 120) as unknown as number;
+    }
+
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (scrollEnd) window.clearTimeout(scrollEnd);
+    };
+  }, [parroquias]);
 
   // Fetch Canton row to populate Sigchos info section (use first row)
   useEffect(() => {
@@ -140,155 +262,151 @@ export default function Home() {
     return () => { mounted = false; };
   }, []);
 
+  // Initialize development environment
+  useEffect(() => {
+    initDevEnv();
+  }, []);
+
   return (
     <>
-  <section className="main-hero" style={heroImage ? {backgroundImage: `url('${heroImage}')`} : undefined}>
+      <section className="main-hero">
+        {/* Background image placed in a dedicated div so we can control scaling responsively */}
+        <div className="main-hero-bg" style={heroImage ? { backgroundImage: `url('${heroImage}')` } : undefined} />
         <Navbar />
         {/* Hero content aquí si lo necesitas */}
       </section>
-      <section className="carousel-section">
-        <div className="carousel-nav carousel-nav-left">
-          <button className="carousel-arrow" onClick={handlePrev} disabled={animating}>&#8592;</button>
-        </div>
-        <div className={`carousel-cards${animating ? " carousel-animating" : ""}`}>
-          {getVisibleItems().map((item, idx) => {
-            const globalIdx = (startIdx + idx) % Math.max(1, total);
-            const isExpanded = expandedIdx === globalIdx;
-            const needsToggle = typeof item.desc === 'string' && item.desc.length > DESC_THRESHOLD;
-            const shortDesc = typeof item.desc === 'string' && item.desc.length > DESC_THRESHOLD ? item.desc.slice(0, DESC_THRESHOLD).trim() + '...' : item.desc;
-            const isCenter = idx === 1;
-            return (
-              <div className={`carousel-card${idx === 1 ? " carousel-card-center" : ""}`} key={idx}>
-                <div className="carousel-card-bg" />
-                <div className="carousel-card-content" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', height: '100%'}}>
-                  <div style={{textAlign: 'center'}}>
-                    <div className="carousel-card-image">
-                      <img src={item.image} alt={typeof item.title === 'string' ? item.title : 'Parroquia'} style={{maxWidth: '100%', height: '160px', objectFit: 'cover', borderRadius: 8}} />
-                    </div>
-                    <h2 className="carousel-title" style={{marginTop: 12}}>{item.title}</h2>
-                    <p className="carousel-desc" style={{marginTop: 8, minHeight: 48, maxWidth: 320, textAlign: 'justify'}}>
-                      {(() => {
-                        if (isExpanded && typeof item.desc === 'string') {
-                          return (
-                            <>
-                              {item.desc}
-                              <button
-                                onClick={() => setExpandedIdx(null)}
-                                style={{background: 'none', border: 'none', color: 'rgba(255, 255, 255, 1)', cursor: 'pointer', padding: 0, marginLeft: 6, fontSize: '0.95em'}}
-                                aria-label="Ver menos"
-                              >
-                                (ver menos)
-                              </button>
-                            </>
-                          );
-                        }
-                        if (needsToggle && typeof item.desc === 'string') {
-                          // If this slide is the center one, expand immediately.
-                          if (isCenter) {
-                            return (
-                              <>
-                                {shortDesc}
-                                <button
-                                  onClick={() => setExpandedIdx(globalIdx)}
-                                  style={{background: 'none', border: 'none', color: 'rgba(255, 255, 255, 1)', cursor: 'pointer', padding: 0, marginLeft: 6, fontSize: '0.95em'}}
-                                  aria-label="Ver más"
-                                >
-                                  (ver más)
-                                </button>
-                              </>
-                            );
-                          }
 
-                          // If it's a side slide, clicking should recentralize it then expand after animation
-                          return (
+      <style jsx>{`
+        @media (max-width: 900px) {
+          .sigchos-info-content {
+            flex-direction: column;
+          }
+          .sigchos-info-img {
+            width: 100%;
+          }
+        }
+      `}</style>
+      <section className="carousel-section">
+        <div className="carousel-scroll" ref={carouselRef}>
+          {parroquias && parroquias.length > 0 ? (
+            // Renderizar 3 copias para scroll infinito
+            Array.from({ length: 3 }, (_, copyIndex) =>
+              parroquias.map((p, idx) => {
+                const title = p.Nombre || 'Parroquia';
+                const image = p.ImagenUrl || '/icon-site-sigchos.png';
+                const desc = p.Descripcion || '';
+                const globalIdx = copyIndex * parroquias.length + idx;
+                const isExpanded = expandedIdx === globalIdx;
+                const needsToggle = typeof desc === 'string' && desc.length > DESC_THRESHOLD;
+                const shortDesc = needsToggle ? desc.slice(0, DESC_THRESHOLD).trim() + '...' : desc;
+
+                return (
+                  <div className="carousel-card" key={`parroquia-${copyIndex}-${(p as any)?.Id ?? idx}`}>
+                    <div className="carousel-card-bg" />
+                    <div className="carousel-card-content" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', height: '100%'}}>
+                      <div style={{textAlign: 'center'}}>
+                        <div className="carousel-card-image">
+                          <img src={image} alt={title} style={{maxWidth: '100%', height: '180px', objectFit: 'cover', borderRadius: 8}} />
+                        </div>
+                        <h2 className="carousel-title" style={{marginTop: 12}}>{title}</h2>
+                        <p className="carousel-desc" style={{marginTop: 8, minHeight: 48, maxWidth: 340, textAlign: 'justify'}}>
+                          {isExpanded ? (
+                            <>
+                              {desc}
+                              <button onClick={() => setExpandedIdx(null)} style={{background: 'none', border: 'none', color: 'rgba(255,255,255,1)', cursor: 'pointer', padding: 0, marginLeft: 6, fontSize: '0.95em'}} aria-label="Ver menos">(ver menos)</button>
+                            </>
+                          ) : needsToggle ? (
                             <>
                               {shortDesc}
-                              <button
-                                onClick={() => {
-                                  if (total === 0) return;
-                                  const targetStart = (startIdx + idx - 1 + total) % total; // make this item center
-                                  setAnimating(true);
-                                  setStartIdx(targetStart);
-                                  setTimeout(() => {
-                                    setAnimating(false);
-                                    const newCenterIdx = (targetStart + 1) % total;
-                                    setExpandedIdx(newCenterIdx);
-                                  }, 360);
-                                }}
-                                style={{background: 'none', border: 'none', color: 'rgba(255, 255, 255, 1)', cursor: 'pointer', padding: 0, marginLeft: 6, fontSize: '0.95em'}}
-                                aria-label="Centrar y ver más"
-                              >
-                                (ver más)
-                              </button>
+                              <button onClick={() => setExpandedIdx(globalIdx)} style={{background: 'none', border: 'none', color: 'rgba(255,255,255,1)', cursor: 'pointer', padding: 0, marginLeft: 6, fontSize: '0.95em'}} aria-label="Ver más">(ver más)</button>
                             </>
-                          );
-                        }
-                        return item.desc;
-                      })()}
-                    </p>
-                  </div>
-                  <div style={{width: '100%', display: 'flex', justifyContent: 'center', gap: 8, marginTop: 12}}>
-                    <button
-                      className="carousel-btn"
-                      onClick={() => {
-                        try {
-                          // If this item comes from sitios, navigate to atractivo detail, otherwise fallback to parroquia slug
-                          if ((item as any).id) {
-                            router.push(`/atractivos/${(item as any).id}`);
-                          } else {
-                            const slug = normalizeToSlug(String(item.title || 'parroquia'));
+                          ) : (
+                            desc
+                          )}
+                        </p>
+                      </div>
+                      <div style={{width: '100%', display: 'flex', justifyContent: 'center', gap: 8, marginTop: 12}}>
+                        <button className="carousel-btn" onClick={() => {
+                          try {
+                            const slug = normalizeToSlug(String(title || 'parroquia'));
                             router.push(`/parroquias/${slug}`);
+                          } catch (err) {
+                            console.error('Failed to navigate', err);
                           }
-                        } catch (err) {
-                          console.error('Failed to navigate', err);
-                        }
-                      }}
-                    >
-                      {item.title}
-                    </button>
+                        }}>{title}</button>
+                      </div>
+                    </div>
                   </div>
-                  {/* inline Ver menos now shown inside the description when expanded */}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="carousel-nav carousel-nav-right">
-          <button className="carousel-arrow" onClick={handleNext} disabled={animating}>&#8594;</button>
+                );
+              })
+            ).flat()
+          ) : (
+            <div style={{color: '#fff', padding: '2rem'}}>No hay parroquias disponibles</div>
+          )}
         </div>
       </section>
 
       {/* Sección informativa Sigchos */}
       <section className="sigchos-info-section">
-        <h2 className="sigchos-info-title">
-          Conoce un poco más sobre <span className="sigchos-info-title-italic">SIGCHOS</span>
-          <span className="sigchos-info-line" />
+        <h2
+          className="sigchos-info-title"
+          style={{
+            // escala la tipografía según el ancho de la pantalla
+            fontSize: 'clamp(1.1rem, 2.8vw, 2.0rem)',
+            lineHeight: 1.08,
+            margin: '0 0 1rem 0', // margen debajo para separar un poco
+          }}
+        >
+          Conoce un poco más sobre{' '}
+          <span
+            className="sigchos-info-title-italic"
+            style={{
+              // sub-título ligeramente más destacado, también responsivo
+              fontSize: 'clamp(1rem, 2.2vw, 1.8rem)',
+              fontStyle: 'italic',
+            }}
+          >
+            SIGCHOS
+          </span>
+          <span
+            className="sigchos-info-line"
+            style={{
+              display: 'block',
+              width: 'clamp(80px, 28vw, 320px)', // ancho de la línea se escala
+              height: 6,
+              borderRadius: 4,
+              marginTop: 10,
+              background: 'linear-gradient(90deg,#ff5e62,#ff9966)',
+            }}
+          />
         </h2>
         <div className="sigchos-info-content">
-          <img className="sigchos-info-img" src={canton?.ImagenUrl || '/Home_v2.jpg'} alt={canton?.Nombre || 'Sigchos panorámica'} />
+          <div className="sigchos-info-img-container">
+            <img className="sigchos-info-img" src={canton?.ImagenUrl || '/Home_v2.jpg'} alt={canton?.Nombre || 'Sigchos panorámica'} />
+          </div>
           <div className="sigchos-info-textbox">
             {(!cantonLoaded) ? (
               <div style={{color: '#fff'}}>Cargando información...</div>
             ) : (!canton) ? (
               <>
-                <h3 className="sigchos-info-heading">Sigchos Cantón de Cotopaxi</h3>
-                <p className="sigchos-info-desc">Sigchos es uno de los siete cantones de la provincia de Cotopaxi, Ecuador. Se encuentra al noroeste de Latacunga, en medio de la Cordillera Occidental de los Andes, con un paisaje accidentado y quebrado, situado en las cuencas de los ríos Toachi y Pilatón. Su nombre deriva de "Sigchila", el nombre de un cacique local, cuyo significado se interpreta como “brazo de hierro”. La temperatura media anual cercana a 13°C, con fluctuaciones entre 9°C y 20°C. La precipitación anual se sitúa entre 500 y 1000 mm.</p>
+          <h3 className="sigchos-info-heading">Sigchos Cantón de Cotopaxi</h3>
+          <p className="sigchos-info-desc">Sigchos es uno de los siete cantones de la provincia de Cotopaxi, Ecuador. Se encuentra al noroeste de Latacunga, en medio de la Cordillera Occidental de los Andes, con un paisaje accidentado y quebrado, situado en las cuencas de los ríos Toachi y Pilatón. Su nombre deriva de "Sigchila", el nombre de un cacique local, cuyo significado se interpreta como "brazo de hierro". La temperatura media anual cercana a 13°C, con fluctuaciones entre 9°C y 20°C. La precipitación anual se sitúa entre 500 y 1000 mm.</p>
               </>
             ) : (
               <>
-                <h3 className="sigchos-info-heading">{canton.Nombre}</h3>
-                <p className="sigchos-info-desc">{canton.Descripcion}</p>
+          <h3 className="sigchos-info-heading">{canton.Nombre}</h3>
+          <p className="sigchos-info-desc">{canton.Descripcion}</p>
               </>
             )}
             <h4 className="sigchos-info-subheading">Fecha de Cantonización</h4>
             <p className="sigchos-info-desc">July 21, 1992</p>
             <h4 className="sigchos-info-subheading">Platos Típicos</h4>
             <p className="sigchos-info-desc">
-Chugchucaras, caldo de gallina criolla, cuy asado, llapingachos, tortillas de maíz, habas con queso, caldo de patas, tamales, morocho con leche, colada morada (en temporada), quesillo con miel, empanadas de viento.
+      Chugchucaras, caldo de gallina criolla, cuy asado, llapingachos, tortillas de maíz, habas con queso, caldo de patas, tamales, morocho con leche, colada morada (en temporada), quesillo con miel, empanadas de viento.
             </p>
             <h4 className="sigchos-info-subheading">Agricultura y Ganadería</h4>
             <p className="sigchos-info-desc">
-Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca, quinua. Ganadería: bovinos (leche y carne), ovinos, porcinos, aves de corral (gallinas, patos), cuyes.
+      Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca, quinua. Ganadería: bovinos (leche y carne), ovinos, porcinos, aves de corral (gallinas, patos), cuyes.
             </p>
           </div>
         </div>
@@ -331,7 +449,21 @@ Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca
               <rect x="16" y="18" width="16" height="12" rx="2" stroke="#ff5e62" strokeWidth="2"/>
             </svg>
           </span>
-          <span className="contacto-gradient-text">¿Necesitas más información?</span>
+          <span
+            className="contacto-gradient-text"
+            style={{
+              fontSize: 'clamp(1rem, 2.6vw, 1.6rem)',
+              lineHeight: 1.15,
+              display: 'inline-block',
+              maxWidth: 'min(640px, 70%)',
+              textAlign: 'center',
+              padding: '8px 12px',
+              boxSizing: 'border-box',
+              wordBreak: 'break-word'
+            }}
+          >
+            ¿Necesitas más información?
+          </span>
           <button className="contacto-gradient-btn" onClick={() => (window.location.href = "/contactos")}>CONTÁCTANOS</button>
         </div>
       </section>
@@ -340,8 +472,23 @@ Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca
       <section className="atractivos-section">
         <div className="atractivos-content">
           <div className="atractivos-title-group">
-            <h2 className="atractivos-title">
-              Conoce los <span className="atractivos-title-gradient">Atractivos</span> de <span className="atractivos-title-bold">SIGCHOS</span>
+            <h2
+              className="atractivos-title"
+              style={{
+                fontSize: 'clamp(1.1rem, 3.2vw, 2.6rem)',
+                lineHeight: 1.06,
+                margin: 0,
+                wordWrap: 'break-word',
+              }}
+            >
+              Conoce los{' '}
+              <span className="atractivos-title-gradient" style={{ fontSize: 'inherit' }}>
+                Atractivos
+              </span>{' '}
+              de{' '}
+              <span className="atractivos-title-bold" style={{ fontSize: 'inherit' }}>
+                SIGCHOS
+              </span>
             </h2>
           </div>
           <div className="atractivos-desc-btn">
@@ -354,6 +501,7 @@ Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca
         <div className="atractivos-slider">
           <div 
             className="atractivos-slider-container"
+            ref={sliderRef}
             onMouseDown={(e) => {
               const slider = e.currentTarget;
               let startX = e.pageX - slider.offsetLeft;
@@ -375,7 +523,7 @@ Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca
               document.addEventListener('mousemove', handleMouseMove);
               document.addEventListener('mouseup', handleMouseUp);
             }}>
-            {(sitios && sitios.length > 0 ? sitios : []).map(({ sitio, ubicacion }, index) => (
+                {(sitios && sitios.length > 0 ? sitios : []).map(({ sitio, ubicacion }, index) => (
               <a href={`/atractivos/${sitio.Id}`} key={sitio.Id} className="atractivo-slide">
                 <div className="atractivo-slide-content">
                   <img src={sitio.ImagenUrl ?? '/file.svg'} alt={sitio.Nombre} className="atractivo-slide-img" />
@@ -388,6 +536,12 @@ Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca
             ))}
           </div>
         </div>
+
+        {/* Slider fill logic: if the number of slides is <= number of columns that fit,
+            expand cards to fill the row and center them */}
+        {typeof window !== 'undefined' && (
+          <SliderFillEffect sliderRef={sliderRef} itemsCount={(sitios ?? []).length} />
+        )}
       </section>
 
       {/* Sección Zapallín */}
@@ -414,7 +568,6 @@ Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca
           <div className="galeria-text">
             <h2 className="galeria-title">Galería Pequeña</h2>
             <p className="galeria-desc">Cada rincón de Sigchos guarda una historia, una tradición y una vista inolvidable. Disfruta este recorrido visual por nuestros paisajes, costumbres y atractivos turísticos que hacen de este cantón un lugar único por descubrir. Desde imponentes montañas y lagunas cristalinas hasta tesoros ancestrales y senderos naturales, las imágenes capturan la esencia viva de un territorio que enamora a todo visitante. ¡Déjate inspirar y explora todo lo que Sigchos tiene para ofrecer!</p>
-            <button className="galeria-btn" onClick={() => window.location.href = '/detalleGaleria'}>VER GALERÍA COMPLETA</button>
           </div>
 
           <div className="galeria-content">
@@ -439,6 +592,24 @@ Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca
                   <img src="/galeria/IMG_7599.jpg" alt="Vista panorámica de Sigchos" />
                 </div>
               </div>
+            </div>
+
+            {/* Button placed here so on narrow screens the order becomes: title -> paragraph -> images -> button -> social links */}
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
+                <button
+                className="galeria-btn"
+                onClick={() => window.location.href = '/detalleGaleria'}
+                style={{
+                  width: '100%',
+                  maxWidth: 420,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  textAlign: 'center'
+                }}
+                >
+                VER GALERÍA COMPLETA
+                </button>
             </div>
 
             <div className="redes-sociales-grid">
@@ -469,7 +640,52 @@ Agricultura: papa, maíz, cebada, habas, arveja, melloco, ocas, zanahoria blanca
   );
 }
 
-// Componente de la sección de video
+    // Simple client-side helper component to adjust slider children widths
+    function SliderFillEffect({ sliderRef, itemsCount }: { sliderRef: React.RefObject<HTMLDivElement | null>; itemsCount: number }) {
+      useEffect(() => {
+        function apply() {
+          const el = sliderRef.current;
+          if (!el) return;
+          const containerWidth = el.clientWidth;
+          // approximate column widths from CSS breakpoints: try 3, 2, or 1 columns
+          const candidateWidths = [3, 2, 1].map((cols) => ({ cols, cardWidth: containerWidth / cols }));
+          // pick the first where cardWidth >= 260 (min comfortable width)
+          const chosen = candidateWidths.find((c) => c.cardWidth >= 260) || candidateWidths[0];
+
+          const visibleCols = chosen.cols;
+
+          // If we have fewer items than visibleCols, expand them to evenly fill the container
+          if (itemsCount > 0 && itemsCount <= visibleCols) {
+            const children = Array.from(el.children) as HTMLElement[];
+            const newWidth = Math.floor(containerWidth / Math.max(1, itemsCount));
+            children.forEach((ch) => {
+              ch.style.flex = `0 0 ${newWidth}px`;
+              ch.style.minWidth = `${newWidth}px`;
+            });
+            // ensure no extra negative margins/paddings interfere
+            el.style.paddingLeft = '0';
+            el.style.marginLeft = '0';
+          } else {
+            // restore defaults
+            const children = Array.from(el.children) as HTMLElement[];
+            children.forEach((ch) => {
+              ch.style.flex = '';
+              ch.style.minWidth = '';
+            });
+            el.style.paddingLeft = '';
+            el.style.marginLeft = '';
+          }
+        }
+
+        apply();
+        window.addEventListener('resize', apply);
+        return () => window.removeEventListener('resize', apply);
+      }, [sliderRef, itemsCount]);
+
+      return null;
+    }
+
+    // Componente de la sección de video
 function SigchosVideo() {
   const [showYoutube, setShowYoutube] = useState(false);
   const [mouseX, setMouseX] = useState(0);

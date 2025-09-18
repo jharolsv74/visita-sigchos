@@ -90,29 +90,6 @@ export default function DetalleGaleriaPage() {
               Mira la Galería completa
             </button>
           </div>
-          <div className="flex justify-end">
-            <button 
-              onClick={() => {
-                const formSection = document.getElementById('galerias-grid');
-                formSection?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="absolute bottom-24 right-24 w-16 h-16 rounded-full border-2 border-white flex items-center justify-center hover:bg-white hover:text-[#12141d] text-white transition-all duration-300"
-            >
-              <svg 
-                className="w-8 h-8" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                />
-              </svg>
-            </button>
-          </div>
         </div>
       </section>
 

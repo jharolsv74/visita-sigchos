@@ -34,7 +34,6 @@ export async function getCategoriaNaturalId(): Promise<number | null> {
 
     if (res.error) throw res.error;
     if (res.data?.Id) {
-      console.log('[sitios.service] getCategoriaNaturalId (by Codigo) ->', res.data.Id);
       return res.data.Id;
     }
 
@@ -48,7 +47,6 @@ export async function getCategoriaNaturalId(): Promise<number | null> {
 
     if (res.error) throw res.error;
     if (res.data?.Id) {
-      console.log('[sitios.service] getCategoriaNaturalId (by Nombre) ->', res.data.Id);
       return res.data.Id;
     }
 
@@ -62,7 +60,6 @@ export async function getCategoriaNaturalId(): Promise<number | null> {
 
     if (res.error) throw res.error;
     const id = res.data?.Id ?? null;
-    console.log('[sitios.service] getCategoriaNaturalId (fallback) ->', id);
     return id;
   } catch (error) {
     console.error("Error obteniendo categoría 'Natural':", error);
@@ -87,16 +84,9 @@ export async function getSitiosNaturalesConUbicacion(): Promise<
 
     // Debug: log the query being executed
     try {
-      console.log('[sitios.service] executing query on SitioTuristico, filter by IdCategoria=', naturalId ?? 'none');
       const result = naturalId
         ? await query.eq("IdCategoria", naturalId)
         : await query; // TODO: ajustar si tu categoría difiere
-
-      console.log('[sitios.service] supabase response:', {
-        error: result.error ? { message: result.error.message, details: result.error.details } : null,
-        count: result.count ?? null,
-        dataLength: Array.isArray(result.data) ? result.data.length : null,
-      });
 
       if (result.error) throw result.error;
       sitios = result.data ?? [];

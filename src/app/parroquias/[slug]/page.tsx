@@ -8,7 +8,8 @@ type Props = {
 };
 
 export default async function Page({ params }: Props) {
-  const { slug } = params;
+  // In Next.js params may be a promise in some runtime modes; await it before using.
+  const { slug } = (await params) as { slug: string };
   const parroquia = await getParroquiaBySlug(slug);
   if (!parroquia) return notFound();
   return <ParroquiaTemplate parroquia={parroquia} />;

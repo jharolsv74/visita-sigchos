@@ -67,7 +67,20 @@ export default function AutoridadesPreview() {
         })}
       </div>
       <div className="autoridades-btn-container">
-        <a className="autoridades-btn" href="/autoridades">VER TODAS LAS AUTORIDADES</a>
+        <a
+          className="autoridades-btn"
+          href="/autoridades"
+          style={{
+            display: 'inline-block',
+            fontSize: 'clamp(0.875rem, 2.5vw, 1.125rem)', // escala entre 14px y 18px según ancho
+            padding: 'clamp(0.5rem, 1.5vw, 0.75rem) clamp(1rem, 3vw, 1.5rem)', // padding responsivo
+            borderRadius: 'clamp(25px, 1.2vw, 12px)',
+            width: 'min(100%, 320px)', // opcional: no exceder 320px y adaptarse a contenedor
+            textAlign: 'center'
+          }}
+        >
+          VER TODAS LAS AUTORIDADES
+        </a>
       </div>
     </>
   );

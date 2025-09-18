@@ -48,35 +48,35 @@ export default function AutoridadesPage() {
         <section className="main-hero relative min-h-screen">
           <div className="absolute inset-0 bg-[url('/2.jpg')] bg-cover bg-no-repeat bg-fixed"></div>
           <div className="absolute inset-0 bg-[#12141d] opacity-80"></div>
-          <div className="relative z-10 flex flex-col justify-center h-screen px-12">
-            <div className="max-w-[600px]">
-              <h1 className="text-6xl font-black text-white mb-6">Autoridades del GAD de SIGCHOS</h1>
-              <p className="text-7md text-gray-300 mb-8">El cantón Sigchos cuenta con un equipo de autoridades municipales comprometidas con el desarrollo territorial, social y económico de la región. Estas autoridades, elegidas democráticamente, tienen la responsabilidad de representar a la ciudadanía y gestionar los recursos públicos de manera transparente y eficiente. Desde la alcaldía hasta el concejo municipal, su labor se orienta a impulsar políticas que mejoren la calidad de vida de los habitantes, fomenten la participación ciudadana y fortalezcan el crecimiento sostenible del cantón.</p>
+            <div className="relative z-10 flex flex-col justify-center h-screen px-4 sm:px-6 md:px-8 lg:px-12">
+            <div className="max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-3xl">
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-black text-white mb-3 sm:mb-4 md:mb-6">Autoridades del GAD de SIGCHOS</h1>
+              <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-300 mb-4 sm:mb-6 md:mb-8 leading-relaxed">El cantón Sigchos cuenta con un equipo de autoridades municipales comprometidas con el desarrollo territorial, social y económico de la región. Estas autoridades, elegidas democráticamente, tienen la responsabilidad de representar a la ciudadanía y gestionar los recursos públicos de manera transparente y eficiente. Desde la alcaldía hasta el concejo municipal, su labor se orienta a impulsar políticas que mejoren la calidad de vida de los habitantes, fomenten la participación ciudadana y fortalezcan el crecimiento sostenible del cantón.</p>
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-center md:justify-end">
               <button
-                onClick={() => {
-                  const formSection = document.getElementById('autoridades-section');
-                  formSection?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="absolute bottom-24 right-24 w-16 h-16 rounded-full border-2 border-white flex items-center justify-center hover:bg-white hover:text-[#12141d] text-white transition-all duration-300"
+              onClick={() => {
+                const formSection = document.getElementById('autoridades-section');
+                formSection?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-full border-2 border-white flex items-center justify-center hover:bg-white hover:text-[#12141d] text-white transition-all duration-300 mx-auto mt-3 sm:mt-4 md:mt-6 md:absolute md:bottom-16 lg:bottom-20 xl:bottom-24 md:right-16 lg:right-20 xl:right-24 md:mx-0 md:mt-0"
               >
-                <svg
-                  className="w-8 h-8"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                  />
-                </svg>
+              <svg
+                className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 xl:w-8 xl:h-8"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                />
+              </svg>
               </button>
             </div>
-          </div>
+            </div>
         </section>
 
         <section id="autoridades-section" className="container mx-auto px-4 py-12 bg-gradient-to-r from-green-400 via-yellow-300 to-yellow-500 rounded-xl">
