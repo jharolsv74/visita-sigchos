@@ -1,12 +1,14 @@
-// components/MapView.tsx
 "use client";
 
 import dynamic from "next/dynamic";
 import type { SitioConUbicacion } from "@/types/db";
-import type { LatLng } from "@/utils/geo";
+import type { LatLng, MarkerBasic } from "@/utils/geo";
 
 type Props = {
-    sitios: SitioConUbicacion[];
+    // Naturaleza
+    sitios?: SitioConUbicacion[];
+    // Emprendimientos u otros
+    markers?: MarkerBasic[];
     selectedRoute?: {
         geojson: GeoJSON.FeatureCollection;
         user: LatLng;

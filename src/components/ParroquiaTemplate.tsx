@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { Parroquia } from '@/types/db';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -16,12 +16,9 @@ export default function ParroquiaTemplate({ parroquia }: Props) {
 
   // Carousel state for parroquias list
   const [parroquiasList, setParroquiasList] = useState<Parroquia[]>([]);
-  const [startIdx, setStartIdx] = useState(0);
-  const [animating, setAnimating] = useState(false);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
-  const DESC_THRESHOLD = 140;
-  const visibleCards = 3;
   const router = useRouter();
+  const carouselRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -46,28 +43,52 @@ export default function ParroquiaTemplate({ parroquia }: Props) {
       }))
     : [];
 
-  const total = itemsToUse.length;
-  const getVisibleItems = () => {
-    if (total === 0) return [];
-    return Array.from({ length: visibleCards }, (_, i) => itemsToUse[(startIdx + i) % total]);
-  };
+  // Infinite carousel for parroquias using carouselRef - simplified
+  useEffect(() => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const slides = itemsToUse.length;
+    if (slides === 0) return;
 
-  const handlePrev = () => {
-    if (animating || total === 0) return;
-    setAnimating(true);
-    setTimeout(() => {
-      setStartIdx((prev) => (prev - 1 + total) % total);
-      setAnimating(false);
-    }, 350);
-  };
-  const handleNext = () => {
-    if (animating || total === 0) return;
-    setAnimating(true);
-    setTimeout(() => {
-      setStartIdx((prev) => (prev + 1) % total);
-      setAnimating(false);
-    }, 350);
-  };
+    // Position at middle group initially
+    const groupWidth = el.scrollWidth / 3;
+    requestAnimationFrame(() => {
+      el.scrollLeft = groupWidth;
+    });
+
+    let scrollEndTimer: number | null = null;
+    let isAdjusting = false;
+
+    function onScroll() {
+      if (!el || isAdjusting) return;
+      
+      // Clear any pending timer
+      if (scrollEndTimer) window.clearTimeout(scrollEndTimer);
+      
+      // Only handle wrapping when scroll stops for a moment
+      scrollEndTimer = window.setTimeout(() => {
+        const left = el.scrollLeft;
+        const gw = groupWidth;
+        
+        // Handle infinite wrapping only
+        if (left < gw * 0.1) {
+          isAdjusting = true;
+          el.scrollLeft = left + gw;
+          isAdjusting = false;
+        } else if (left > gw * 1.9) {
+          isAdjusting = true;
+          el.scrollLeft = left - gw;
+          isAdjusting = false;
+        }
+      }, 150) as unknown as number; // Longer delay to avoid interrupting user scroll
+    }
+
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (scrollEndTimer) window.clearTimeout(scrollEndTimer);
+    };
+  }, [itemsToUse]);
 
   return (
     <div className="parroquia-page">
@@ -164,64 +185,62 @@ export default function ParroquiaTemplate({ parroquia }: Props) {
           </aside>
         </div>
 
-        {/* --- INSERT SLIDER BELOW THE LAST ASIDE: DISTINCT DESIGN --- */}
-        <section className="carousel-section new-style" style={{ marginTop: 28 }}>
-          <div className="carousel-wrapper">
-            <button
-                className="nav-left"
-                onClick={handlePrev}
-                aria-label="Anterior"
-                disabled={animating}
-                style={{ background: '#fff', color: '#07101a', borderColor: 'rgba(0,0,0,0.06)' }}
-            >
-                &#10094;
-            </button>
-            <div className="carousel-cards-snap">
-              {getVisibleItems().map((item, idx) => {
-                const globalIdx = (startIdx + idx) % Math.max(1, total);
-                return (
-                  <article
-                    key={idx}
-                    className={`carousel-card-snap ${idx === 1 ? 'center' : ''}`}
-                    style={{ backgroundImage: `url(${item.image})` }}
-                    role="group"
-                    aria-label={String(item.title)}
-                  >
-                    <div className="card-overlay">
-                      <div className="card-meta">
-                        <h4 className="card-title">{item.title}</h4>
-                        <p className="card-excerpt">{(item.desc || '').slice(0, 90)}</p>
-                      </div>
-                      <div className="card-actions">
-                        <button
-                          onClick={() => {
-                            try {
-                              const slug = normalizeToSlug(String(item.btn || item.title || 'parroquia'));
-                              router.push(`/parroquias/${slug}`);
-                            } catch (err) {
-                              console.error('Failed to navigate to parroquia', err);
-                            }
-                          }}
-                          className="card-cta"
-                          aria-label={`Ir a ${item.title}`}
-                        >Ver</button>
+        {/* --- CAROUSEL DE PARROQUIAS --- */}
+        <section className="carousel-section-parroquias" style={{ marginTop: 48 }}>
+          <h3 style={{ 
+            fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', 
+            fontWeight: 800, 
+            color: '#ffffffff', 
+            textAlign: 'center', 
+            marginBottom: '2rem',
+            letterSpacing: '-0.5px'
+          }}>
+            Otras Parroquias de Sigchos
+          </h3>
+          <div className="carousel-scroll-parroquias" ref={carouselRef}>
+            {itemsToUse.length > 0 ? (
+              // Renderizar 3 copias para scroll infinito
+              Array.from({ length: 3 }, (_, copyIndex) =>
+                itemsToUse.map((item, idx) => {
+                  const globalIdx = copyIndex * itemsToUse.length + idx;
+                  const isExpanded = expandedIdx === globalIdx;
+                  return (
+                    <div 
+                      className="parroquia-card" 
+                      key={`parroquia-${copyIndex}-${idx}`}
+                      style={{ backgroundImage: `url(${item.image})` }}
+                    >
+                      <div className="parroquia-card-overlay">
+                        <div className="parroquia-card-content">
+                          <h4 className="parroquia-card-title">{item.title}</h4>
+                          <p className="parroquia-card-desc">
+                            {(item.desc || '').slice(0, 90)}...
+                          </p>
+                          <button
+                            onClick={() => {
+                              try {
+                                const slug = normalizeToSlug(String(item.title || 'parroquia'));
+                                router.push(`/parroquias/${slug}`);
+                              } catch (err) {
+                                console.error('Failed to navigate to parroquia', err);
+                              }
+                            }}
+                            className="parroquia-card-btn"
+                          >
+                            Ver Parroquia
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </article>
-                );
-              })}
-            </div>
-            <button
-                className="nav-left"
-                onClick={handleNext}
-                aria-label="Siguiente"
-                disabled={animating}
-                style={{ background: '#fff', color: '#07101a', borderColor: 'rgba(0,0,0,0.06)' }}
-            >
-                &#10095;
-            </button>
+                  );
+                })
+              ).flat()
+            ) : (
+              <div style={{color: '#666', padding: '2rem', textAlign: 'center'}}>
+                Cargando parroquias...
+              </div>
+            )}
           </div>
-          
         </section>
 
       </main>
@@ -253,18 +272,121 @@ export default function ParroquiaTemplate({ parroquia }: Props) {
         .btn.primary { background:#fff; color:#12141d; }
         .btn.ghost { background:transparent; border:1px solid rgba(255,255,255,0.12); color:#fff; }
 
-        /* Carousel (new-style): horizontal scroll-snap cards with image backgrounds */
-        .carousel-section.new-style { width:100%; }
-        .carousel-wrapper { display:flex; align-items:center; gap:12px; }
-        .carousel-cards-snap { display:flex; gap:18px; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; padding:12px 8px; }
-        .carousel-card-snap { min-width:300px; height:500px; border-radius:12px; background-size:cover; background-position:center; scroll-snap-align:center; position:relative; flex:0 0 auto; box-shadow: 0 12px 36px rgba(2,6,23,0.12); display:flex; align-items:flex-end; }
-        .carousel-card-snap.center { transform: scale(1.04); }
-        .card-overlay { width:100%; padding:12px; background: linear-gradient(180deg, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.45) 40%, rgba(0,0,0,0.65) 100%); color:#fff; border-radius:12px; display:flex; justify-content:space-between; align-items:flex-end; }
-        .card-title { margin:0; font-size:1rem; font-weight:800; }
-        .card-excerpt { margin:0; font-size:0.85rem; opacity:0.95; max-width:140px; }
-        .card-cta { background:rgba(255,255,255,0.95); color:#07101a; padding:6px 10px; border-radius:8px; border:none; font-weight:700; cursor:pointer; }
-        .nav-left, .nav-right { background:transparent; border:1px solid rgba(0,0,0,0.06); border-radius:8px; padding:8px 10px; cursor:pointer; }
-        .nav-left[disabled], .nav-right[disabled] { opacity:0.45; cursor:not-allowed; }
+        /* Carousel de Parroquias - Nuevo diseño limpio */
+        .carousel-section-parroquias { 
+          width: 100%; 
+          margin: 48px 0; 
+          padding: 0 20px; 
+        }
+        
+        .carousel-scroll-parroquias {
+          display: flex;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scroll-behavior: smooth;
+          gap: 1.5rem;
+          padding: 1.5rem 0;
+          /* Hide scrollbars */
+          scrollbar-width: none; /* Firefox */
+          -ms-overflow-style: none; /* IE and Edge */
+        }
+        
+        .carousel-scroll-parroquias::-webkit-scrollbar {
+          display: none; /* Chrome, Safari, Opera */
+        }
+        
+        .parroquia-card {
+          flex: 0 0 320px;
+          width: 320px;
+          height: 400px;
+          border-radius: 16px;
+          background-size: cover;
+          background-position: center;
+          position: relative;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+          scroll-snap-align: center;
+        }
+        
+        .parroquia-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+        }
+        
+        .parroquia-card-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, 
+            rgba(0,0,0,0) 0%, 
+            rgba(0,0,0,0.3) 50%, 
+            rgba(0,0,0,0.8) 100%
+          );
+          border-radius: 16px;
+          display: flex;
+          align-items: flex-end;
+          padding: 24px;
+        }
+        
+        .parroquia-card-content {
+          color: white;
+          width: 100%;
+        }
+        
+        .parroquia-card-title {
+          font-size: 1.4rem;
+          font-weight: 800;
+          margin: 0 0 8px 0;
+          color: white;
+          text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+        
+        .parroquia-card-desc {
+          font-size: 0.9rem;
+          margin: 0 0 16px 0;
+          opacity: 0.9;
+          line-height: 1.4;
+          color: rgba(255,255,255,0.95);
+        }
+        
+        .parroquia-card-btn {
+          background: white;
+          color: #07101a;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 25px;
+          font-weight: 700;
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .parroquia-card-btn:hover {
+          background: #f0f0f0;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        }
+        
+        @media (max-width: 768px) {
+          .parroquia-card {
+            flex: 0 0 280px;
+            width: 280px;
+            height: 360px;
+          }
+          
+          .carousel-scroll-parroquias {
+            gap: 1rem;
+            padding: 1rem 0;
+          }
+          
+          .parroquia-card-overlay {
+            padding: 20px;
+          }
+          
+          .parroquia-card-title {
+            font-size: 1.2rem;
+          }
+        }
         @media (max-width: 900px) {
           .content-grid { grid-template-columns: 1fr; }
           .card { margin-top:12px; }

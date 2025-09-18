@@ -1,4 +1,3 @@
-// utils/geo.ts
 export type LatLng = { lat: number; lng: number };
 
 export function isValidLatLng(val: unknown): val is LatLng {
@@ -22,3 +21,13 @@ export function makeRouteCacheKey(sitioId: number, user: LatLng) {
   const lng = toFixedCoord(user.lng);
   return `${sitioId}_${lat}_${lng}`;
 }
+
+// Nuevo: para evitar colisiones entre distintos tipos de entidad
+export function makeRouteCacheKeyNS(ns: string, entityId: number, user: LatLng) {
+  const lat = toFixedCoord(user.lat);
+  const lng = toFixedCoord(user.lng);
+  return `${ns}:${entityId}_${lat}_${lng}`;
+}
+
+// Nuevo: tipo de marcador genérico reutilizable
+export type MarkerBasic = { id: number; nombre: string; lat: number; lng: number };

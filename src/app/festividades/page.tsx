@@ -34,40 +34,17 @@ export default function FestividadesPage() {
     <section className="main-hero relative min-h-screen">
         <div className="absolute inset-0 bg-[url('/2.jpg')] bg-cover bg-no-repeat bg-fixed"></div>
         <div className="absolute inset-0 bg-[#12141d] opacity-80"></div>
-        <div className="relative z-10 flex flex-col justify-center h-screen px-12">
+        <div className="relative z-10 flex flex-col justify-center h-screen px-6 md:px-12">
             <div className="max-w-[600px]">
-            <h1 className="text-6xl font-black text-white mb-6">Festividades de Sigchos</h1>
-            <p className="text-2xl text-gray-300 mb-4">Conoce las tradiciones, fechas y celebraciones que dan vida a nuestra comunidad.</p>
-            <p className="text-md text-gray-200 mb-8">Explora el cronograma de eventos y acompáñanos en cada fiesta popular.</p><button 
-                onClick={() => {
-                    const formSection = document.getElementById('festividades');
-                    formSection?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="contactanos-btn py-4 px-8 bg-transparent border-2 border-white text-white rounded-full hover:bg-white hover:text-[#12141d] transition-all duration-300 text-lg font-semibold">
-                FESTIVIDADES
-            </button>
-            </div>
-            <div className="flex justify-end">
-            <button 
-                onClick={() => {
-                const formSection = document.getElementById('festividades');
-                formSection?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="absolute bottom-24 right-24 w-16 h-16 rounded-full border-2 border-white flex items-center justify-center hover:bg-white hover:text-[#12141d] text-white transition-all duration-300"
-            >
-                <svg 
-                className="w-8 h-8" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-                >
-                <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                />
-                </svg>
+            <h1 className="text-4xl md:text-6xl font-black text-white mb-4 md:mb-6">Festividades de Sigchos</h1>
+            <p className="text-lg md:text-2xl text-gray-300 mb-3 md:mb-4">Conoce las tradiciones, fechas y celebraciones que dan vida a nuestra comunidad.</p>
+            <p className="text-sm md:text-md text-gray-200 mb-6 md:mb-8">Explora el cronograma de eventos y acompáñanos en cada fiesta popular.</p><button 
+          onClick={() => {
+              const formSection = document.getElementById('festividades');
+              formSection?.scrollIntoView({ behavior: 'smooth' });
+          }}
+          className="contactanos-btn py-3 px-6 md:py-4 md:px-8 bg-transparent border-2 border-white text-white rounded-full hover:bg-white hover:text-[#12141d] transition-all duration-300 text-base md:text-lg font-semibold">
+          FESTIVIDADES
             </button>
             </div>
         </div>
@@ -100,102 +77,39 @@ export default function FestividadesPage() {
           {items.map(it => (
             <article
               key={it.Id}
-              style={{
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'stretch',
-            width: '100%',
-            background: '#fff',
-            borderRadius: 12,
-            overflow: 'hidden',
-            boxShadow: '0 8px 20px rgba(2,6,23,0.06)',
-              }}
+              className="flex flex-col md:flex-row items-stretch w-full bg-white rounded-xl overflow-hidden shadow-lg"
             >
               {/* Left content */}
-              <div style={{ flex: 1, padding: 16, display: 'flex', flexDirection: 'column'}}>
-            <div>
-              <div style={{ color: '#1f2a3eff', fontSize: 16, fontWeight: 700, marginBottom: 6 }}>
+              <div className="flex-1 p-4 md:p-6 flex flex-col">
+              <div>
+                <div className="text-gray-700 text-sm md:text-base font-bold mb-2">
                 {it.Fecha ? new Date(it.Fecha).toLocaleDateString() : 'Fecha no disponible'}
-              </div>
-              <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#0b2e55' }}>{it.Nombre}</h3>
-              <div style={{ color: '#0b2e55', fontSize: 18, fontWeight: 700}}>
+                </div>
+                <h3 className="m-0 text-lg md:text-xl lg:text-2xl font-extrabold text-blue-900">{it.Nombre}</h3>
+                <div className="text-blue-900 text-base md:text-lg font-bold">
                 {it.Parroquia?.Nombre ?? ''}
+                </div>
               </div>
-            </div>
 
-            <p
-              style={{
-                color: '#000000ff',
-                fontSize: 18,
-                overflow: 'hidden',
-                display: '-webkit-box',
-                WebkitLineClamp: 3,
-                WebkitBoxOrient: 'vertical',
-              }}
-            >
-              {it.Historia ?? ''}
-            </p>
+              <p className="text-black text-sm md:text-base lg:text-lg overflow-hidden line-clamp-3 mt-2">
+                {it.Historia ?? ''}
+              </p>
               </div>
 
               {/* Right image */}
-              <div
-            style={{
-              width: 320,
-              minWidth: 160,
-              maxWidth: '40%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'stretch',
-            }}
-              >
-            <div
-              style={{
-                width: '100%',
-                height: '100%',
-                overflow: 'hidden',
-                // rounded to the left side of the image
-                borderTopLeftRadius: 12,
-                borderBottomLeftRadius: 12,
-                borderTopRightRadius: 0,
-                borderBottomRightRadius: 0,
-                background: '#f3f4f6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {it.ImagenUrl ? (
+              <div className="w-full h-48 md:w-80 md:min-w-40 md:max-w-[40%] md:h-auto flex items-stretch">
+              <div className="w-full h-full overflow-hidden rounded-b-xl md:rounded-b-none md:rounded-r-xl bg-gray-100 flex items-center justify-center">
+                {it.ImagenUrl ? (
                 <img
                   src={it.ImagenUrl}
                   alt={it.Nombre}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  className="w-full h-full object-cover block"
                 />
-              ) : (
-                <div style={{ color: '#9ca3af', padding: 12 }}>Sin imagen</div>
-              )}
-            </div>
+                ) : (
+                <div className="text-gray-400 p-3 text-center">Sin imagen</div>
+                )}
               </div>
-
-              {/* Responsive: stack on narrow screens */}
-              <style jsx>{`
-            @media (max-width: 768px) {
-              article {
-                flex-direction: column;
-              }
-              article > div:nth-child(2) {
-                width: 100% !important;
-                min-width: 0 !important;
-                max-width: 100% !important;
-                height: 200px;
-              }
-              article > div:nth-child(2) > div {
-                border-top-left-radius: 0 !important;
-                border-bottom-left-radius: 0 !important;
-                border-top-right-radius: 12px !important;
-                border-bottom-right-radius: 12px !important;
-              }
-            }
-              `}</style>
+              </div>
             </article>
           ))}
         </div>

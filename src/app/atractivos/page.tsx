@@ -3,12 +3,85 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 // removed unused local JSON import; this page now loads sitios from the DB
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { getSitiosNaturalesConUbicacion } from '@/services/sitios.service';
 import type { SitioConUbicacion } from '@/types/db';
 
 export default function AtractivosTuristicos() {
   const [sitiosSlider, setSitiosSlider] = useState<SitioConUbicacion[] | null>(null);
+  const sliderRef = useRef<HTMLDivElement | null>(null);
+
+  // Infinite carousel helpers
+  const isAdjustingRef = useRef(false);
+  const scrollEndTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    const el = sliderRef.current;
+    if (!el) return;
+    const slides = (sitiosSlider ?? []).length;
+    if (slides === 0) return;
+
+    // When rendered, place scroll in the middle group
+    const groupWidth = el.scrollWidth / 3;
+    // move to middle group's start smoothly (instant)
+    requestAnimationFrame(() => {
+      el.scrollLeft = groupWidth;
+    });
+
+    function onScroll() {
+      if (!el) return;
+      if (isAdjustingRef.current) return;
+      // debounce end of scroll
+      if (scrollEndTimer.current) window.clearTimeout(scrollEndTimer.current);
+      // @ts-ignore - window.setTimeout returns number
+      scrollEndTimer.current = window.setTimeout(() => {
+        // snap to nearest child and wrap groups if necessary
+        const groupW = el.scrollWidth / 3;
+        const left = el.scrollLeft;
+        // wrap when crossing groups
+        if (left < groupW * 0.5) {
+          isAdjustingRef.current = true;
+          el.scrollLeft = left + groupW;
+          isAdjustingRef.current = false;
+          return;
+        }
+        if (left > groupW * 1.5) {
+          isAdjustingRef.current = true;
+          el.scrollLeft = left - groupW;
+          isAdjustingRef.current = false;
+          return;
+        }
+
+        // snap to nearest child center
+        const children = Array.from(el.children) as HTMLElement[];
+        const containerCenter = el.scrollLeft + el.clientWidth / 2;
+        let nearestIdx = -1;
+        let nearestDist = Infinity;
+        children.forEach((ch, i) => {
+          const chCenter = ch.offsetLeft + ch.clientWidth / 2;
+          const dist = Math.abs(chCenter - containerCenter);
+          if (dist < nearestDist) {
+            nearestDist = dist;
+            nearestIdx = i;
+          }
+        });
+        if (nearestIdx >= 0) {
+          const ch = children[nearestIdx];
+          const target = ch.offsetLeft + ch.clientWidth / 2 - el.clientWidth / 2;
+          isAdjustingRef.current = true;
+          el.scrollTo({ left: target, behavior: 'smooth' });
+          // release after animation
+          setTimeout(() => (isAdjustingRef.current = false), 300);
+        }
+      }, 120) as unknown as number;
+    }
+
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (scrollEndTimer.current) window.clearTimeout(scrollEndTimer.current);
+    };
+  }, [sitiosSlider]);
 
   useEffect(() => {
     let mounted = true;
@@ -35,46 +108,23 @@ export default function AtractivosTuristicos() {
             <div className="absolute inset-0 bg-[url('/Maqui-Machay.webp')] bg-cover bg-no-repeat bg-fixed"></div>
             <div className="absolute inset-0 bg-[#12141d] opacity-80"></div>
             <div className="relative z-10 flex flex-col justify-center h-screen px-12">
-              <div className="max-w-[800px]">
-                <h1 className="text-6xl font-black text-white mb-6">
+                <div className="max-w-[800px] px-4 sm:px-6">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 sm:mb-6">
                   Atractivos Turísticos de <span className="bg-gradient-to-r from-[#a12f7d] to-[#325f66] text-transparent bg-clip-text">SIGCHOS</span>
                 </h1>
-                <p className="text-7md text-gray-300 mb-8 leading-relaxed">
+                <p className="text-sm sm:text-base md:text-lg text-gray-300 mb-6 sm:mb-8 leading-relaxed">
                   Sigchos es un rincón privilegiado de la provincia de Cotopaxi, rodeado de paisajes andinos, cultura ancestral y maravillas naturales. En esta sección encontrarás los destinos más representativos del cantón: lagunas volcánicas, cascadas, senderos arqueológicos, bosques protegidos y montañas imponentes. Cada atractivo es una invitación a vivir experiencias únicas en contacto con la naturaleza y la historia. ¡Descúbrelos y anímate a visitarlos!
                 </p>
                 <button 
                   onClick={() => {
-                    const atractivosSection = document.getElementById('atractivos-section');
-                    atractivosSection?.scrollIntoView({ behavior: 'smooth' });
+                  const atractivosSection = document.getElementById('atractivos-section');
+                  atractivosSection?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="atractivos-btn py-4 px-8 bg-transparent border-2 border-white text-white rounded-full hover:bg-white hover:text-[#12141d] transition-all duration-300 text-lg font-semibold"
+                  className="atractivos-btn py-3 px-6 sm:py-4 sm:px-8 bg-transparent border-2 border-white text-white rounded-full hover:bg-white hover:text-[#12141d] transition-all duration-300 text-base sm:text-lg font-semibold"
                 >
                   EXPLORAR
                 </button>
-              </div>
-              <div className="flex justify-end">
-                <button 
-                  onClick={() => {
-                    const atractivosSection = document.getElementById('atractivos-section');
-                    atractivosSection?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="absolute bottom-24 right-24 w-16 h-16 rounded-full border-2 border-white flex items-center justify-center hover:bg-white hover:text-[#12141d] text-white transition-all duration-300"
-                >
-                  <svg 
-                    className="w-8 h-8" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                    />
-                  </svg>
-                </button>
-              </div>
+                </div>
             </div>
           </section>
 
@@ -89,6 +139,7 @@ export default function AtractivosTuristicos() {
             <div className="atractivos-slider">
               <div 
                 className="atractivos-slider-container"
+                ref={sliderRef}
                 onMouseDown={(e) => {
                   const slider = e.currentTarget;
                   let startX = e.pageX - slider.offsetLeft;
@@ -123,6 +174,13 @@ export default function AtractivosTuristicos() {
                 ))}
               </div>
             </div>
+
+            {/* Slider fill logic: if the number of slides is <= number of columns that fit,
+                expand cards to fill the row and center them */}
+            {/** This effect runs client-side and updates inline styles on the slider children. */}
+            {typeof window !== 'undefined' && (
+              <SliderFillEffect sliderRef={sliderRef} itemsCount={(sitiosSlider ?? []).length} />
+            )}
           </section>
 
           {/* Sección Descubre */}
@@ -245,4 +303,49 @@ function SiteCards() {
       ))}
     </div>
   );
+}
+
+// Simple client-side helper component to adjust slider children widths
+function SliderFillEffect({ sliderRef, itemsCount }: { sliderRef: React.RefObject<HTMLDivElement | null>; itemsCount: number }) {
+  useEffect(() => {
+    function apply() {
+      const el = sliderRef.current;
+      if (!el) return;
+      const containerWidth = el.clientWidth;
+      // approximate column widths from CSS breakpoints: try 3, 2, or 1 columns
+      const candidateWidths = [3, 2, 1].map((cols) => ({ cols, cardWidth: containerWidth / cols }));
+      // pick the first where cardWidth >= 260 (min comfortable width)
+      const chosen = candidateWidths.find((c) => c.cardWidth >= 260) || candidateWidths[0];
+
+      const visibleCols = chosen.cols;
+
+      // If we have fewer items than visibleCols, expand them to evenly fill the container
+      if (itemsCount > 0 && itemsCount <= visibleCols) {
+        const children = Array.from(el.children) as HTMLElement[];
+        const newWidth = Math.floor(containerWidth / Math.max(1, itemsCount));
+        children.forEach((ch) => {
+          ch.style.flex = `0 0 ${newWidth}px`;
+          ch.style.minWidth = `${newWidth}px`;
+        });
+        // ensure no extra negative margins/paddings interfere
+        el.style.paddingLeft = '0';
+        el.style.marginLeft = '0';
+      } else {
+        // restore defaults
+        const children = Array.from(el.children) as HTMLElement[];
+        children.forEach((ch) => {
+          ch.style.flex = '';
+          ch.style.minWidth = '';
+        });
+        el.style.paddingLeft = '';
+        el.style.marginLeft = '';
+      }
+    }
+
+    apply();
+    window.addEventListener('resize', apply);
+    return () => window.removeEventListener('resize', apply);
+  }, [sliderRef, itemsCount]);
+
+  return null;
 }

@@ -16,7 +16,7 @@ export default function PoliticaPrivacidad() {
             <h2 className="text-2xl font-bold mt-6 mb-2">1. Responsable del Tratamiento</h2>
             <p className="text-gray-300">El responsable del tratamiento de los datos personales es:</p>
             <ul className="text-gray-300 ml-4 list-disc mx-auto text-left max-w-3xl">
-              <li>Nombre del sitio o proyecto: <strong>www.visita-sigchos.com</strong></li>
+              <li>Nombre del sitio o proyecto: <strong>visita-sigchos</strong></li>
               <li>Correo electrónico de contacto: <strong>gadmunicipal@gadmsigchos.gob.ec</strong></li>
               <li>Ubicación: Cantón Sigchos, Cotopaxi, Ecuador.</li>
             </ul>
